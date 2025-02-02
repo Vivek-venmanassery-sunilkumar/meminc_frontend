@@ -1,10 +1,7 @@
-
-
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Menu, X } from 'lucide-react'
-import {Link} from 'react-router-dom'
+import { Search, Menu, X, Bell, Heart, ShoppingCart } from "lucide-react"
 import Logo from "../commoncomponents/logo"
 
 const categories = [
@@ -17,7 +14,7 @@ const categories = [
   "Sausage,Bacon & salami",
 ]
 
-export default function Header() {
+export default function LoggedInUserHeader() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -27,8 +24,8 @@ export default function Header() {
       setIsMobile(window.innerWidth < 1024)
     }
     handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
   }, [])
 
   const handleSearch = (e) => {
@@ -51,7 +48,7 @@ export default function Header() {
             </Button>
           )}
         </div>
-        <div className={`w-full lg:w-4/5 flex flex-col ${isMobile && !isMobileMenuOpen ? 'hidden' : 'flex'}`}>
+        <div className={`w-full lg:w-4/5 flex flex-col ${isMobile && !isMobileMenuOpen ? "hidden" : "flex"}`}>
           <div className="flex flex-col lg:flex-row items-center justify-between mb-2 p-2 bg-[#3A4849] rounded-lg">
             <div className="w-full lg:flex-grow lg:mr-4 mb-2 lg:mb-0">
               <form onSubmit={handleSearch} className="flex items-center">
@@ -68,11 +65,14 @@ export default function Header() {
               </form>
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" className="bg-[#F0EAD6] text-[#4A5859] hover:bg-[#E6DCC8] text-sm lg:text-base">
-                <Link to="/Register">Register</Link>  
+              <Button variant="ghost" className="text-white">
+                <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="outline" className="bg-[#D4AF37] text-[#4A5859] hover:bg-[#C4A137] text-sm lg:text-base">
-                <Link to="/login">Log In</Link>
+              <Button variant="ghost" className="text-white">
+                <Heart className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" className="text-white">
+                <ShoppingCart className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -92,3 +92,4 @@ export default function Header() {
     </header>
   )
 }
+

@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import Logo from "@/components/landingpagecomponents/logo"
+import Logo from "@/components/commoncomponents/logo"
 import {Link} from 'react-router-dom'
 
 const LoginPage = () => {
