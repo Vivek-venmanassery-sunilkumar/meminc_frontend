@@ -3,10 +3,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import RegisterUser from "./RegisterUser"
 import RegisterVendor from "./RegisterVendor"
 import { motion, AnimatePresence } from "framer-motion"
-import {Link} from 'react-router-dom'
+import { Link } from "react-router-dom"
+import OtpModal from "../commoncomponents/Otp"
 
 const Register = () => {
   const [isVendor, setIsVendor] = useState(false)
+  const [showOtpModal, setShowOtpModal] = useState(false)
+
+  const handleRegisterSubmit = () => {
+    setShowOtpModal(true)
+  }
+
+  const handleOtpVerified = () => {
+    setShowOtpModal(false)
+    // Handle successful verification (e.g., navigate to dashboard)
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#4A5859] p-4">
@@ -46,20 +57,26 @@ const Register = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {isVendor ? <RegisterVendor /> : <RegisterUser />}
+              {isVendor ? (
+                <RegisterVendor onSubmit={handleRegisterSubmit} />
+              ) : (
+                <RegisterUser onSubmit={handleRegisterSubmit} />
+              )}
             </motion.div>
           </AnimatePresence>
 
           <div className="mt-6 text-center">
             <span className="text-sm text-gray-600">
-              Have an account?{" "}
-                <Link to='/Login'>Login</Link>
+              Have an account? <Link to="/login">Login</Link>
             </span>
           </div>
         </CardContent>
       </Card>
+
+      {showOtpModal && <OtpModal onVerified={handleOtpVerified} onClose={() => setShowOtpModal(false)} />}
     </div>
   )
 }
 
 export default Register
+

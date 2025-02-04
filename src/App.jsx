@@ -14,10 +14,10 @@ export default function App(){
         <>
           <Route path="/vendor" element={<LoggedInVendorhome/>}/>
           <Route path="/" element={<Landingpage/>}/>
-          <Route path="/Register" element={<Registerpage/>}/>
-          <Route path="/Login" element={<LoginPage/>}/>
+          <Route path="/register" element={<Registerpage/>}/>
+          <Route path="/login" element={<LoginPage/>}/>
           <Route path='/customer' element={<LoggedInUserHomepage/>}/>
-          <Route path="/Admin" element={<LoggedInAdminHomepage/>}/>
+          <Route path="/admin" element={<LoggedInAdminHomepage/>}/>
         </>
       </Routes>
     </Router>

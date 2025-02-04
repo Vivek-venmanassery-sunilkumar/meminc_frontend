@@ -2,9 +2,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
-const RegisterUser = () => {
+const RegisterUser = ({ onSubmit }) => {
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    onSubmit()
+  }
+
   return (
-    <form className="space-y-4">
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -39,3 +44,4 @@ const RegisterUser = () => {
 }
 
 export default RegisterUser
+

@@ -69,7 +69,7 @@ export default function Header() {
             </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" className="bg-[#F0EAD6] text-[#4A5859] hover:bg-[#E6DCC8] text-sm lg:text-base">
-                <Link to="/Register">Register</Link>  
+                <Link to="/register">Register</Link>  
               </Button>
               <Button variant="outline" className="bg-[#D4AF37] text-[#4A5859] hover:bg-[#C4A137] text-sm lg:text-base">
                 <Link to="/login">Log In</Link>
