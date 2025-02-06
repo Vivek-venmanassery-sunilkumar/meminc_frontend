@@ -5,10 +5,14 @@ import RegisterVendor from "./RegisterVendor"
 import { motion, AnimatePresence } from "framer-motion"
 import { Link } from "react-router-dom"
 import OtpModal from "../commoncomponents/Otp"
+import {useNavigate} from 'react-router-dom'
+
+
 
 const Register = () => {
   const [isVendor, setIsVendor] = useState(false)
   const [showOtpModal, setShowOtpModal] = useState(false)
+  const navigate = useNavigate()
 
   const handleRegisterSubmit = () => {
     setShowOtpModal(true)
@@ -17,6 +21,7 @@ const Register = () => {
   const handleOtpVerified = () => {
     setShowOtpModal(false)
     // Handle successful verification (e.g., navigate to dashboard)
+    navigate('/login')
   }
 
   return (

@@ -2,13 +2,28 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import {useSelector, useDispatch} from 'react-redux'
+import { clearOtpValidation } from "@/redux/OtpValidation"
+import api from "@/axios/axiosInstance"
+import {toast} from 'react-hot-toast'
+import { useNavigate } from "react-router-dom"
+
+
+
+
 
 const OtpModal = ({ onVerified, onClose }) => {
-  const [otp, setOtp] = useState("")
+  const navigate = useNavigate()
+  const email = useSelector((state)=> state.otpValidation.email)
+
+  const [otpdata, setOtpData] = useState({
+    otp: '',
+    email:email
+  })
   const [timer, setTimer] = useState(60)
   const [isTimerRunning, setIsTimerRunning] = useState(true)
-
+  const dispatch = useDispatch();
   useEffect(() => {
     let interval
 
@@ -25,15 +40,43 @@ const OtpModal = ({ onVerified, onClose }) => {
     }
   }, [timer, isTimerRunning])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle OTP verification logic here
-    console.log("Verifying OTP:", otp)
+    // otp validation logic
+    try{
+      console.log(otpdata)
+      const response = await api.post('/register/customer/verifyotp/', otpdata);
+      if (response.status === 201){
+        dispatch(clearOtpValidation())
+      }
+    }catch(error){
+      toast.error("Invalid otp")
+    }
     onVerified()
   }
 
-  const handleResend = () => {
+  const handleResend = async () => {
     // Handle resend OTP logic here
+    try{
+      console.log('data',otpdata)
+      const response = await api.post('/register/customer/resendotp/', {'email':otpdata.email})
+      if (response.status === 200){
+        console.log(response.data.registered_email)
+        toast.success('Otp sent to your Email')
+      }
+
+    }catch(error){
+      if(error.response && error.response.data){
+        const errorMessages = Object.values(error.response.data).flat();
+        if (error.response.data.registration_timeout){
+          toast.error(errorMessages[0])
+          navigate('/register')
+        }
+        toast.error(errorMessages[0])
+      }else{
+        toast.error("something went wrong")
+      }
+    }
     setTimer(60)
     setIsTimerRunning(true)
     console.log("Resending OTP")
@@ -47,11 +90,20 @@ const OtpModal = ({ onVerified, onClose }) => {
     // If timer is running, let the form submit normally
   }
 
+  const handleChange = (e)=>{
+    const {name, value} = e.target
+    setOtpData((prevData)=>({
+      ...prevData,
+      [name]: value
+    }))
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Enter OTP</DialogTitle>
+          <DialogDescription>Enter the otp sent to your registered mail.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -62,9 +114,10 @@ const OtpModal = ({ onVerified, onClose }) => {
               inputMode="numeric"
               pattern="\d{6}"
               maxLength={6}
+              name = "otp"
               placeholder="Enter 6-digit OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              value={otpdata.otp}
+              onChange={handleChange}
               className="text-center text-2xl tracking-widest"
             />
           </div>
