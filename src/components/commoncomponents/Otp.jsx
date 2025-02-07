@@ -43,23 +43,35 @@ const OtpModal = ({ onVerified, onClose,onAttemptrunOut }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     // otp validation logic
+    console.log("Sending OTP data:", {
+      otp: otpdata.otp,
+      otpType: typeof otpdata.otp,
+      otpLength: otpdata.otp.length
+  });
     try{
       console.log(otpdata)
-      const response = await api.post('/register/customer/verifyotp/', otpdata);
+      const response = await api.post('/register/verifyotp/', otpdata);
       if (response.status === 201){
         dispatch(clearOtpValidation())
+        toast.success('Registration successfull')
+        onVerified()
       }
     }catch(error){
-      toast.error("Invalid otp")
+      if(error.response && error.response.data){
+        const errorMessages = Object.values(error.response.data).flat()
+        console.log(errorMessages)
+        toast.error(errorMessages[0] || "Registration Failed");
+      }else{
+        toast.error("something went wrong.Please try again")
+      }
     }
-    onVerified()
   }
 
   const handleResend = async () => {
     // Handle resend OTP logic here
     try{
       console.log('data',otpdata)
-      const response = await api.post('/register/customer/resendotp/', {'email':otpdata.email})
+      const response = await api.post('/register/resendotp/', {'email':otpdata.email})
       if (response.status === 200){
         console.log(response.data.registered_email)
         toast.success('Otp sent to your Email')
