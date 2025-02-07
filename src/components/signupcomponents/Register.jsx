@@ -24,6 +24,10 @@ const Register = () => {
     navigate('/login')
   }
 
+  const handleOtpAttemptRunOut = ()=>{
+    setShowOtpModal(false)
+
+  }
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#4A5859] p-4">
       <Card className="w-full max-w-2xl">
@@ -78,7 +82,7 @@ const Register = () => {
         </CardContent>
       </Card>
 
-      {showOtpModal && <OtpModal onVerified={handleOtpVerified} onClose={() => setShowOtpModal(false)} />}
+      {showOtpModal && <OtpModal onVerified={handleOtpVerified} onClose={() => setShowOtpModal(false)} onAttemptrunOut={()=>handleOtpAttemptRunOut} />}
     </div>
   )
 }

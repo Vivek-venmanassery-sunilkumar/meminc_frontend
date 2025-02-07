@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom"
 
 
 
-const OtpModal = ({ onVerified, onClose }) => {
+const OtpModal = ({ onVerified, onClose,onAttemptrunOut }) => {
   const navigate = useNavigate()
   const email = useSelector((state)=> state.otpValidation.email)
 
@@ -69,8 +69,10 @@ const OtpModal = ({ onVerified, onClose }) => {
       if(error.response && error.response.data){
         const errorMessages = Object.values(error.response.data).flat();
         if (error.response.data.registration_timeout){
+          console.log(error.response.data.registration_timeout)
           toast.error(errorMessages[0])
-          navigate('/register')
+          onAttemptrunOut()
+          navigate('/')
         }
         toast.error(errorMessages[0])
       }else{
