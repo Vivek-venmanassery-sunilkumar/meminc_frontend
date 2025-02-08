@@ -6,7 +6,7 @@ import LoggedInUserHomepage from "./pages/User/AuthenticatedUserhome";
 import LoggedInVendorhome from "./pages/Vendor/AuthenticatedVendorhome";
 import LoggedInAdminHomepage from "./pages/Admin/AuthenticatedAdminhome";
 import { AdminRoute, Forbidden, UserRoute, VendorRoute } from '@/routes/Index'
-import AccountInformation from "./pages/User/AccountInformation";
+import UserProfile from "./pages/User/UserProfile";
 
 
 
@@ -18,7 +18,7 @@ export default function App(){
         <Route path="/" element={<Landingpage />} />
         <Route path="/register" element={<Registerpage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/userprofile" element={<AccountInformation/>}/>
+        <Route path="/userprofile" element={<UserProfile/>}/>
 
         {/* Protected Routes */}
         <Route

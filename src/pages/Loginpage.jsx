@@ -40,7 +40,8 @@ const LoginPage = () => {
         }
       }
     }catch(error){
-      toast.error("Login Failed, Invalid Credentials");
+      const errorMessage = error.response.data.error
+      toast.error(errorMessage)
       console.error('Login Error:', error);
     }
 
