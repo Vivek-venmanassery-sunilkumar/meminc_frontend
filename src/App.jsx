@@ -7,6 +7,8 @@ import LoggedInVendorhome from "./pages/Vendor/AuthenticatedVendorhome";
 import LoggedInAdminHomepage from "./pages/Admin/AuthenticatedAdminhome";
 import { AdminRoute, Forbidden, UserRoute, VendorRoute } from '@/routes/Index'
 import UserProfile from "./pages/User/UserProfile";
+import AdminProfile from "./pages/Admin/AdminProfile";
+import VendorProfile from "./pages/Vendor/VendorProfile";
 
 
 
@@ -18,17 +20,29 @@ export default function App(){
         <Route path="/" element={<Landingpage />} />
         <Route path="/register" element={<Registerpage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/userprofile" element={<UserProfile/>}/>
+        <Route path="/adminprofile" element={<AdminProfile/>}/>
+        <Route path="/vendorprofile" element={<VendorProfile/>}/>
 
         {/* Protected Routes */}
+{/* 
+        customer routes */}
         <Route
           path="/customer"
           element={
             <UserRoute>
               <LoggedInUserHomepage />
             </UserRoute>
-          }
-        />
+          }/>
+        <Route 
+          path="/customer/account-overview"
+          element = {
+            <UserRoute>
+              <UserProfile/>
+            </UserRoute>
+          }/>
+
+
+        {/* Admin Routes */}
         <Route
           path="/admin"
           element={
@@ -37,6 +51,17 @@ export default function App(){
             </AdminRoute>
           }
         />
+        <Route
+          path="/admin/account-overview"
+          element = {
+            <AdminRoute>
+              <AdminProfile/>
+            </AdminRoute>
+          }
+        />
+
+
+        {/* Vendor Routes */}
         <Route
           path="/vendor"
           element={

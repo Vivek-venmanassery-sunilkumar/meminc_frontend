@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Bell } from "lucide-react"
 import Logo from "../commoncomponents/logo"
+import {Link} from 'react-router-dom'
 
 export default function LoggedInAdminHeader() {
   return (
@@ -13,6 +14,11 @@ export default function LoggedInAdminHeader() {
           <Button variant="ghost" className="text-white">
             <Bell className="h-5 w-5" />
           </Button>
+          <Link to={'admin/account-overview'}>
+          <Button variant="ghost" className="text-white">
+                  <User className="h-5 w-5" />
+          </Button>
+          </Link>
         </div>
       </div>
     </header>

@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Menu, X, Bell, Heart, ShoppingCart, User } from 'lucide-react'
 import Logo from "../commoncomponents/logo"
+import { Link } from "react-router-dom"
 
 const categories = [
   "Eggs",
@@ -74,9 +75,11 @@ export default function LoggedInUserHeader() {
               <Button variant="ghost" className="text-white">
                 <ShoppingCart className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" className="text-white" onClick={() => window.location.href = '/account-overview'}>
-                <User className="h-5 w-5" />
-              </Button>
+              <Link to={'/customer/account-overview'}>
+                <Button variant="ghost" className="text-white">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
             </div>
           </div>
           <nav>

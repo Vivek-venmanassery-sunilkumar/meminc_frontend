@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
-import { Bell, DollarSign } from "lucide-react"
+import { Bell, DollarSign, User } from "lucide-react"
 import Logo from "../commoncomponents/logo"
+import { Link } from "react-router-dom"
 
 export default function LoggedInSellerHeader() {
   return (
@@ -15,6 +16,9 @@ export default function LoggedInSellerHeader() {
           </Button>
           <Button variant="ghost" className="text-white">
             <DollarSign className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" className="text-white">
+            <User className="h-5 w-5" />
           </Button>
         </div>
       </div>

@@ -47,6 +47,11 @@ export default function UserProfileContent() {
 );
 }
 
+
+
+
+
+
 function AccountOverview() {
   return (
     <Card>
@@ -74,6 +79,11 @@ function AccountOverview() {
     </Card>
   );
 }
+
+
+
+
+
 
 function ManageAddresses() {
   const [addresses, setAddresses] = useState([
@@ -125,6 +135,11 @@ function ManageAddresses() {
   );
 }
 
+
+
+
+
+
 function MyOrders() {
   const orders = [
     { id: 1, date: "2023-05-01", total: 99.99, status: "Delivered" },
@@ -149,6 +164,11 @@ function MyOrders() {
     </Card>
   );
 }
+
+
+
+
+
 
 function Wallet() {
   return (
