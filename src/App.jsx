@@ -4,7 +4,6 @@ import Registerpage from "./pages/Registerpage";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoggedInUserHomepage from "./pages/User/AuthenticatedUserhome";
 import LoggedInVendorhome from "./pages/Vendor/AuthenticatedVendorhome";
-import LoggedInAdminHomepage from "./pages/Admin/AuthenticatedAdminhome";
 import { AdminRoute, Forbidden, UserRoute, VendorRoute } from '@/routes/Index'
 import UserProfile from "./pages/User/UserProfile";
 import AdminProfile from "./pages/Admin/AdminProfile";

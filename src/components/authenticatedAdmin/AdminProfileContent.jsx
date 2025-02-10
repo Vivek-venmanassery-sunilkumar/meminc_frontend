@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import Footer from '../commoncomponents/Footer';
+import api from '@/axios/axiosInstance';
 
 export default function AdminProfileContent() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -97,48 +98,89 @@ function Dashboard() {
 function UserManagement() {
   const [activeTable, setActiveTable] = useState("customers");
   const [searchQuery, setSearchQuery] = useState("");
+  const [customers, setCustomers] = useState([]);
+  const [sellers, setSellers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1)
 
-  // Dummy data for customers and sellers
-  const [customers, setCustomers] = useState([
-    { id: 1, firstName: "John", lastName: "Doe", email: "john@example.com", phone: "1234567890", isBlocked: false },
-    { id: 2, firstName: "Jane", lastName: "Doe", email: "jane@example.com", phone: "0987654321", isBlocked: true },
-    { id: 3, firstName: "Alice", lastName: "Smith", email: "alice@example.com", phone: "1122334455", isBlocked: false },
-  ]);
-  const [sellers, setSellers] = useState([
-    { id: 1, firstName: "Alice", lastName: "Smith", companyName: "Alice Corp", email: "alice@example.com", phone: "1234567890", isVerified: false, isBlocked: false },
-    { id: 2, firstName: "Bob", lastName: "Johnson", companyName: "Bob Inc", email: "bob@example.com", phone: "0987654321", isVerified: true, isBlocked: true },
-    { id: 3, firstName: "Charlie", lastName: "Brown", companyName: "Charlie Co", email: "charlie@example.com", phone: "5566778899", isVerified: false, isBlocked: false },
-  ]);
-
-  // Function to handle seller verification
-  const handleVerifySeller = (id) => {
-    setSellers(sellers.map(seller => seller.id === id ? { ...seller, isVerified: !seller.isVerified } : seller));
-  };
-
-  // Function to handle blocking/unblocking users
-  const handleBlockUser = (id, isCustomer) => {
-    if (isCustomer) {
-      setCustomers(customers.map(customer => customer.id === id ? { ...customer, isBlocked: !customer.isBlocked } : customer));
-    } else {
-      setSellers(sellers.map(seller => seller.id === id ? { ...seller, isBlocked: !seller.isBlocked } : seller));
+  
+  // Fetch paginated data from the backend
+  const fetchData = async(page = 1) => {
+    const endpoint = activeTable === "customers" ? 'admin/customers/' : 'admin/vendors/';
+    const url = `${endpoint}?page=${page}`;
+    try{
+      const response = await api.get(url);
+      if(activeTable === 'customers'){
+        setCustomers(response.data.results);
+      }else{
+        setSellers(response.data.results);
+      }
+      setTotalPages(response.data.total_pages)
+    }catch(error){
+      console.error("Error fetching data: ", error);
     }
   };
 
+  useEffect(()=>{
+    fetchData(currentPage);
+  },[activeTable, currentPage]);
+
+  // Function to handle seller verification
+  const handleVerifySeller = async (id) => {
+  const seller = sellers.find(seller => seller.user__id === id);
+  if (seller && !seller.user__is_verified) {
+    try {
+      // Use PUT or PATCH to update the seller's verification status
+      const response = await api.put(`admin/verify-seller/?id=${id}`);
+      if (response.status === 200) {
+        setSellers(sellers.map(seller => seller.user__id === id ? { ...seller, user__is_verified: true } : seller));
+      }
+    } catch (error) {
+      console.error("Error verifying seller: ", error);
+    }
+  }
+};
+  // Function to handle blocking/unblocking users
+  const handleBlockUser = async (id, isCustomer) => {
+  const endpoint = `admin/block_user/?id=${id}`;
+  try {
+    // Use PUT or PATCH to update the user's blocked status
+    const response = await api.put(endpoint); // Adjust the payload as needed
+    if (response.status === 200) {
+      if (isCustomer) {
+        setCustomers(customers.map(customer => customer.user__id === id ? { ...customer, user__is_blocked: !customer.user__is_blocked } : customer));
+      } else {
+        setSellers(sellers.map(seller => seller.user__id === id ? { ...seller, user__is_blocked: !seller.user__is_blocked } : seller));
+      }
+    }
+  } catch (error) {
+    console.error("Error blocking/unblocking user: ", error);
+  }
+};
+
+  //Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage>= 1 && newPage <= totalPages){
+      setCurrentPage(newPage);
+    }
+  };
+
+
   // Filter customers based on search query
   const filteredCustomers = customers.filter(customer =>
-    customer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone.includes(searchQuery)
+    customer.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.user__user__email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.phone_number_number.includes(searchQuery)
   );
 
   // Filter sellers based on search query
   const filteredSellers = sellers.filter(seller =>
-    seller.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.phone.includes(searchQuery)
+    seller.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    seller.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    seller.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    seller.user__user__email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    seller.phone_number_number.includes(searchQuery)
   );
 
   return (
@@ -158,86 +200,115 @@ function UserManagement() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {activeTable === "customers" ? (
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Blocked</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCustomers.map(customer => (
-                <tr key={customer.id}>
-                  <td className='text-center'>{customer.id}</td>
-                  <td className='text-center'>{customer.firstName}</td>
-                  <td className='text-center'>{customer.lastName}</td>
-                  <td className='text-center'>{customer.email}</td>
-                  <td className='text-center'>{customer.phone}</td>
-                  <td className='text-center'>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={customer.isBlocked}
-                        onChange={() => handleBlockUser(customer.id, true)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                    </label>
-                  </td>
+          <>
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Blocked</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredCustomers.map((customer, index) =>{ 
+                  const sequentialIndex = (currentPage - 1) * 10 + index + 1; 
+                  return(
+                  <tr key={customer.user__id}>
+                    <td className="text-center">{sequentialIndex}</td>
+                    <td className="text-center">{customer.first_name}</td>
+                    <td className="text-center">{customer.last_name}</td>
+                    <td className="text-center">{customer.user__email}</td>
+                    <td className="text-center">{customer.phone_number}</td>
+                    <td className="text-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={customer.user__is_blocked}
+                          onChange={() => handleBlockUser(customer.user__id, true)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      </label>
+                    </td>
+                  </tr>
+                )})}
+              </tbody>
+            </table>
+          </>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Company Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Verify</th>
-                <th>Blocked</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSellers.map(seller => (
-                <tr key={seller.id}>
-                  <td className='text-center'>{seller.id}</td>
-                  <td className='text-center'>{seller.firstName}</td>
-                  <td className='text-center'>{seller.lastName}</td>
-                  <td className='text-center'>{seller.companyName}</td>
-                  <td className='text-center'>{seller.email}</td>
-                  <td className='text-center'>{seller.phone}</td>
-                  <td className='text-center'>
-                    <Button variant="ghost" size="icon" onClick={() => handleVerifySeller(seller.id)}>
-                      {seller.isVerified ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
-                    </Button>
-                  </td>
-                  <td className='text-center'>
-                    <div className="flex justify-center">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={seller.isBlocked}
-                        onChange={() => handleBlockUser(seller.id, false)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                    </label>
-                    </div>
-                  </td>
+          <>
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Company Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Verify</th>
+                  <th>Blocked</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredSellers.map((seller,index) => {
+                  const sequentialIndex = (currentPage - 1) * 10 + index + 1; 
+                  return (
+                  <tr key={seller.user__id}>
+                    <td className="text-center">{sequentialIndex}</td>
+                    <td className="text-center">{seller.first_name}</td>
+                    <td className="text-center">{seller.last_name}</td>
+                    <td className="text-center">{seller.company_name}</td>
+                    <td className="text-center">{seller.user__email}</td>
+                    <td className="text-center">{seller.phone_number}</td>
+                    <td className="text-center">
+                      <Button variant="ghost" size="icon" onClick={() => handleVerifySeller(seller.user__id)}>
+                        {seller.user__is_verified ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                      </Button>
+                    </td>
+                    <td className="text-center">
+                      <div className="flex justify-center">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={seller.user__is_blocked}
+                            onChange={() => handleBlockUser(seller.user__id, false)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                        </label>
+                      </div>
+                    </td>
+                  </tr>
+                )})}
+              </tbody>
+            </table>
+          </>
         )}
+
+        {/* Pagination Controls */}
+        <div className="flex justify-center mt-4">
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <span className="mx-4">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
