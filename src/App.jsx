@@ -44,14 +44,6 @@ export default function App(){
 
         {/* Admin Routes */}
         <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <LoggedInAdminHomepage />
-            </AdminRoute>
-          }
-        />
-        <Route
           path="/admin/account-overview"
           element = {
             <AdminRoute>

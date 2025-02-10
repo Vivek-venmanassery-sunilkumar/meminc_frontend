@@ -27,7 +27,7 @@ const LoginPage = () => {
           const  role= response.data.role;
           dispatch(loginSuccessAdmin({role: role}));
           toast.success('Welcom Admin');
-          navigate('/admin')
+          navigate('/admin/account-overview')
         }
         else{
           const {role, first_name, last_name} = response.data
