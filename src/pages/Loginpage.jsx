@@ -9,6 +9,7 @@ import {toast} from 'react-hot-toast'
 import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { loginSuccess } from "@/redux/AuthSlice"
+import { loginSuccessAdmin } from "@/redux/AdminAuthSlice"
 
 
 const LoginPage = () => {
@@ -22,21 +23,26 @@ const LoginPage = () => {
     try{
       const response = await api.post('/register/login/', logindata);
       if(response.status === 200){
-        const {role, first_name, last_name} = response.data
-        dispatch(loginSuccess({user: logindata.email, role:role, first_name:first_name, last_name:last_name}))
-        toast.success("Login Successfull")
-        switch (role) {
-          case 'customer':
-            navigate('/customer');
-            break;
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'vendor':
-            navigate('/vendor');
-            break;
-          default:
-            navigate('/');
+        if (response.data.role === 'admin'){
+          const  role= response.data.role;
+          dispatch(loginSuccessAdmin({role: role}));
+          toast.success('Welcom Admin');
+          navigate('/admin')
+        }
+        else{
+          const {role, first_name, last_name} = response.data
+          dispatch(loginSuccess({user: logindata.email, role:role, first_name:first_name, last_name:last_name}))
+          toast.success("Login Successfull")
+          switch (role) {
+            case 'customer':
+              navigate('/customer');
+              break;
+            case 'vendor':
+              navigate('/vendor');
+              break;
+            default:
+              navigate('/');
+        }
         }
       }
     }catch(error){

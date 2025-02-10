@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, role } = useSelector((state) => state.auth);
+  const { isAuthenticated, role } = useSelector((state) => state.adminAuth);
 
   if (!isAuthenticated) {
     // Redirect to login if not authenticated

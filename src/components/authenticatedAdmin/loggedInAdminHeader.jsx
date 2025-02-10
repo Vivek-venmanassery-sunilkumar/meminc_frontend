@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button"
-import { Bell } from "lucide-react"
+import { Bell, User } from "lucide-react"
 import Logo from "../commoncomponents/logo"
 import {Link} from 'react-router-dom'
+
 
 export default function LoggedInAdminHeader() {
   return (
