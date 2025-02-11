@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { X, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import Footer from "../commoncomponents/Footer";
+import api from "@/axios/axiosInstance";
+import toast from "react-hot-toast";
 
 export default function VendorProfileContent() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -128,7 +130,7 @@ function Products() {
       category: "",
       description: "",
       image: "",
-      variantUnit: "",
+      variant_unit: "",
       variants: [],
     });
   
@@ -163,7 +165,7 @@ function Products() {
         ...newProduct,
         variants: [
           ...newProduct.variants,
-          { id: Date.now(), quantity: "", price: 0, stock: 0 },
+          { id: Date.now(), quantity: 0, price: 0, stock: 0 },
         ],
       });
     };
@@ -184,19 +186,57 @@ function Products() {
       setNewProduct({ ...newProduct, variants: updatedVariants });
     };
   
-    const handleSubmitProduct = (e) => {
+    const handleSubmitProduct =async (e) => {
       e.preventDefault();
-      setProducts([...products, { ...newProduct, id: Date.now() }]);
-      setNewProduct({
-        name: "",
-        category: "",
-        description: "",
-        image: "",
-        variantUnit: "",
-        variants: [],
-      });
-      setIsAddProductOpen(false);
-    };
+      console.log(newProduct)
+      // const formData = new FormData();
+
+      // // Append product fields to FormData
+      // formData.append('name', newProduct.name);
+      // formData.append('category', newProduct.category);
+      // formData.append('description', newProduct.description);
+      // formData.append('variant_unit', newProduct.variant_unit);
+
+      // // Append the image file
+      // if (newProduct.image) {
+      //   formData.append('image', newProduct.image);
+      // }
+
+      // // Append variants
+      // newProduct.variants.forEach((variant, index) => {
+      //   formData.append(`variants[${index}][quantity]`, variant.quantity);
+      //   formData.append(`variants[${index}][price]`, variant.price);
+      //   formData.append(`variants[${index}][stock]`, variant.stock);
+      // });
+      // for (let [key, value] of formData.entries()) {
+      //   console.log(key, value);
+      // }
+      try{
+        const response = await api.post('/vendor/add-product/',newProduct, {
+          headers: {
+            'Content-Type':'multipart/form-data',
+          }
+        });
+
+        if(response.status === 201){
+          setProducts([...products, response.data]);
+          setNewProduct({
+            name: '',
+            category: '',
+            description: '',
+            image: '',
+            variant_unit: '',
+            variants: [],
+
+          });
+          setIsAddProductOpen(false);
+          toast.success("Product added successfully");
+        }
+      }catch(error){
+          console.error("Error adding product: ", error);
+          toast.error("Failed to add product. Please try again");
+      }
+    }; 
   
     const filteredProducts = products.filter((product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -285,9 +325,9 @@ function Products() {
   
                     <div>
                       <label className="block text-sm font-medium mb-1">Variant Unit</label>
-                            <select value={newProduct.variantUnit} 
+                            <select value={newProduct.variant_unit} 
                                 onChange={(e) =>
-                                setNewProduct({ ...newProduct, variantUnit: e.target.value })
+                                setNewProduct({ ...newProduct, variant_unit: e.target.value })
                               }
                               className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
