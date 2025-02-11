@@ -20,8 +20,7 @@ export default function App(){
         <Route path="/register" element={<Registerpage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/adminprofile" element={<AdminProfile/>}/>
-        <Route path="/vendorprofile" element={<VendorProfile/>}/>
-
+       
         {/* Protected Routes */}
 {/* 
         customer routes */}
@@ -61,6 +60,15 @@ export default function App(){
             </VendorRoute>
           }
         />
+       <Route 
+          path="/vendor/account-overview" 
+          element={
+            <VendorRoute>
+                <VendorProfile/>
+            </VendorRoute>
+          }
+        />
+
       </Routes>
     </Router>
   )

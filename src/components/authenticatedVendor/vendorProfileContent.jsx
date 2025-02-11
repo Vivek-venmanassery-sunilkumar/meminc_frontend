@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +97,8 @@ function Products() {
         category: "Fruits",
         image: "/placeholder-product.jpg",
         variants: [
-          { id: 1, name: "1 kg", price: 5.99, availableQty: 100 },
-          { id: 2, name: "2 kg", price: 10.99, availableQty: 50 },
+          { id: 1, name: "1 kg", price: 5.99, stock: 100 },
+          { id: 2, name: "2 kg", price: 10.99, stock: 50 },
         ],
       },
       {
@@ -107,13 +107,13 @@ function Products() {
         category: "Bakery",
         image: "/placeholder-product.jpg",
         variants: [
-          { id: 1, name: "500g", price: 3.99, availableQty: 200 },
-          { id: 2, name: "1 kg", price: 6.99, availableQty: 150 },
+          { id: 1, name: "500g", price: 3.99, stock: 200 },
+          { id: 2, name: "1 kg", price: 6.99, stock: 150 },
         ],
       },
     ]);
   
-    React.useEffect(() => {
+    useEffect(() => {
       const initialSelectedVariants = {};
       products.forEach(product => {
         if (product.variants.length > 0 && !selectedVariants[product.id]) {
@@ -163,7 +163,7 @@ function Products() {
         ...newProduct,
         variants: [
           ...newProduct.variants,
-          { id: Date.now(), name: "", price: 0, availableQty: 0 },
+          { id: Date.now(), quantity: "", price: 0, stock: 0 },
         ],
       });
     };
@@ -177,7 +177,7 @@ function Products() {
   
     const handleVariantChange = (index, field, value) => {
       const updatedVariants = [...newProduct.variants];
-      if ((field === 'price' || field === 'availableQty') && value < 0) {
+      if ((field === 'price' || field === 'stock' || field === 'quantity') && value < 0) {
         return; // Prevent negative values
       }
       updatedVariants[index][field] = value;
@@ -221,7 +221,7 @@ function Products() {
           </div>
   
           {/* Add Product Accordion */}
-          {isAddProductOpen && (
+         {isAddProductOpen && (
             <Accordion type="single" collapsible className="mb-6">
               <AccordionItem value="add-product">
                 <AccordionTrigger>Add New Product</AccordionTrigger>
@@ -241,13 +241,24 @@ function Products() {
   
                     <div>
                       <label className="block text-sm font-medium mb-1">Category</label>
-                      <Input
-                        value={newProduct.category}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, category: e.target.value })
-                        }
-                        required
-                      />
+                          <select
+                            value={newProduct.category}
+                            onChange={(e) =>
+                              setNewProduct({ ...newProduct, category: e.target.value })
+                            }
+                            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="" disabled>Select a category</option>
+                            <option value="Eggs">Eggs</option>
+                            <option value="Fish & Seafood">Fish & Seafood</option>
+                            <option value="Marinades">Marinades</option>
+                            <option value="Mutton & Lamb">Mutton & Lamb</option>
+                            <option value="Pork & Other Meats">Pork & Other Meats</option>
+                            <option value="Poultry">Poultry</option>
+                            <option value="Sausage">Sausage</option>
+                            <option value="Bacon & Salami">Bacon & Salami</option>
+                          </select>
                     </div>
   
                     <div>
@@ -274,15 +285,19 @@ function Products() {
   
                     <div>
                       <label className="block text-sm font-medium mb-1">Variant Unit</label>
-                      <Input
-                        placeholder="e.g., kg, g, nos, packets"
-                        value={newProduct.variantUnit}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, variantUnit: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
+                            <select value={newProduct.variantUnit} 
+                                onChange={(e) =>
+                                setNewProduct({ ...newProduct, variantUnit: e.target.value })
+                              }
+                              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            >
+                              <option value="" disabled>Select a unit</option>
+                              <option value="kg">kg</option>
+                              <option value="g">g</option>
+                              <option value="packet of">packet of</option>
+                            </select>
+                        </div>
   
                     {/* Variants Section */}
                     <div className="space-y-4">
@@ -299,21 +314,22 @@ function Products() {
                           <div className="space-y-3">
                             <div>
                               <label className="block text-sm font-medium mb-1">
-                                Variant Name
+                                Variant Quantity
                               </label>
                               <Input
-                                placeholder="e.g., 1kg, 500g"
-                                value={variant.name}
+                                type = 'number'
+                                placeholder="e.g., 1, 500 (No need to write the unit)"
+                                value={variant.quantity}
                                 onChange={(e) =>
-                                  handleVariantChange(index, "name", e.target.value)
+                                  handleVariantChange(index, "quantity", e.target.value)
                                 }
                                 required
                               />
-                            </div>
+                          </div>
   
                             <div>
                               <label className="block text-sm font-medium mb-1">
-                                Price ($)
+                                Price (₹)
                               </label>
                               <Input
                                 type="number"
@@ -330,16 +346,16 @@ function Products() {
   
                             <div>
                               <label className="block text-sm font-medium mb-1">
-                                Available Quantity
+                                Stock
                               </label>
                               <Input
                                 type="number"
                                 min="0"
                                 step="1"
                                 placeholder="0"
-                                value={variant.availableQty}
+                                value={variant.stock}
                                 onChange={(e) =>
-                                  handleVariantChange(index, "availableQty", parseInt(e.target.value))
+                                  handleVariantChange(index, "stock", parseInt(e.target.value))
                                 }
                                 required
                               />
@@ -398,7 +414,7 @@ function Products() {
                       </select>
                     </td>
                     <td className="text-center">${selectedVariant.price.toFixed(2)}</td>
-                    <td className="text-center">{selectedVariant.availableQty}</td>
+                    <td className="text-center">{selectedVariant.stock}</td>
                     <td className="text-center">
                       <Button variant="ghost" size="icon">
                         <Edit className="h-4 w-4" />
