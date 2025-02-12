@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+          "bg-[#4A5859] text-white shadow hover:bg-[#3E4B4C]", // Darker shade for hover
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-red-600 text-white shadow-sm hover:bg-red-700",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-gray-400 bg-transparent text-[#4A5859] shadow-sm hover:bg-[#4A5859] hover:text-white",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-gray-200 text-gray-800 shadow-sm hover:bg-gray-300",
+        ghost: "hover:bg-gray-100 hover:text-gray-900",
+        link: "text-[#4A5859] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",
@@ -32,7 +32,9 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-)
+);
+
+
 
 const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
