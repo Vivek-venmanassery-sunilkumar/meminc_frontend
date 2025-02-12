@@ -38,7 +38,7 @@ const LoginPage = () => {
               navigate('/customer');
               break;
             case 'vendor':
-              navigate('/vendor');
+              navigate('/vendor/account-overview');
               break;
             default:
               navigate('/');
