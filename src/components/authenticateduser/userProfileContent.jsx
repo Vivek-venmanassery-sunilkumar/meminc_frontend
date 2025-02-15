@@ -9,9 +9,22 @@ import { Edit, Trash2 } from 'lucide-react';
 import Footer from '../commoncomponents/Footer';
 import api from '@/axios/axiosInstance';
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { logout } from '@/redux/AuthSlice';
 
 export default function UserProfileContent() {
   const [activeTab, setActiveTab] = useState("account");
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const handleLogout = async ()=>{
+    const response = await api.post('register/logout/')
+    if(response.status === 200){
+      dispatch(logout())
+      navigate('/')
+    }
+    
+  }
 
   return (
 <div className="min-h-screen flex flex-col"> {/* Use flex-col for proper layout */}
@@ -23,6 +36,13 @@ export default function UserProfileContent() {
       <TabsTrigger value="addresses" className="w-full text-left">Manage Addresses</TabsTrigger>
       <TabsTrigger value="orders" className="w-full text-left">My Orders</TabsTrigger>
       <TabsTrigger value="wallet" className="w-full text-left">Wallet</TabsTrigger>
+      <Button
+            onClick={handleLogout}
+            className="w-full mt-4 text-left justify-center" // Adjust styling as needed
+            variant="ghost" // Use the variant that matches your design
+          >
+            Logout
+      </Button>
     </TabsList>
 
     {/* TabsContent on the right */}

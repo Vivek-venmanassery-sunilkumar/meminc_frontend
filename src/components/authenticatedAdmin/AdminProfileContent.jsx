@@ -7,9 +7,22 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import Footer from '../commoncomponents/Footer';
 import api from '@/axios/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { logout } from '@/redux/AdminAuthSlice';
 
 export default function AdminProfileContent() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const handleLogout = async ()=>{
+    const response = await api.post('register/logout/')
+    if(response.status === 200){
+      dispatch(logout())
+      navigate('/')
+    }
+    
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -24,6 +37,13 @@ export default function AdminProfileContent() {
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
             <TabsTrigger value="coupons" className="w-full text-left">Coupons</TabsTrigger>
             <TabsTrigger value="concerns" className="w-full text-left">Concerns</TabsTrigger>
+            <Button
+                  onClick={handleLogout}
+                  className="w-full mt-4 text-left justify-center" // Adjust styling as needed
+                  variant="ghost" // Use the variant that matches your design
+                >
+                  Logout
+            </Button>
           </TabsList>
 
           {/* TabsContent on the right */}

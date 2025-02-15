@@ -3,6 +3,7 @@ import LoggedInUserHeader from "@/components/authenticateduser/loggedInUserHeade
 import ProductListing from "@/components/authenticateduser/productlisting";
 import Footer from "@/components/commoncomponents/Footer";
 import api from "@/axios/axiosInstance";
+import BannerCarousel from "@/components/commoncomponents/Carousalcommon";
 
 export default function LoggedInUserHomepage() {
     const [products, setProducts] = useState([]);
@@ -50,7 +51,8 @@ export default function LoggedInUserHomepage() {
     return (
         <>
             <LoggedInUserHeader />
-            <main className="mt-20">
+            <main className="mt-20 pt-10">
+                <BannerCarousel/>
                 <ProductListing
                     products={products}
                     selectedBrand={selectedBrand}
