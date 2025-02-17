@@ -30,8 +30,9 @@ const LoginPage = () => {
           navigate('/admin/account-overview')
         }
         else{
-          const {role, first_name, last_name} = response.data
-          dispatch(loginSuccess({user: logindata.email, role:role, first_name:first_name, last_name:last_name}))
+          const {role, first_name, last_name,phone_number, profile_picture} = response.data
+          console.log('phone_number and profile_picrure',phone_number,profile_picture)
+          dispatch(loginSuccess({email: logindata.email, role:role, first_name:first_name, last_name:last_name,phone_number: phone_number, profile_picture: profile_picture}))
           toast.success("Login Successfull")
           switch (role) {
             case 'customer':
