@@ -1,5 +1,5 @@
 import LoggedInAdminHeader from "@/components/authenticatedAdmin/loggedInAdminHeader";
-import AdminProfileContent from "@/components/authenticatedAdmin/AdminProfileContent";
+import AdminProfileContent from "@/components/authenticatedAdmin/profileComponents/AdminProfileContent";
 
 
 export default function AdminProfile(){
