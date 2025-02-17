@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const loadStateFromLocalStorage = () => {
     try {
-      const serializedState = localStorage.getItem("authState");
+      const serializedState = localStorage.getItem("adminauthState");
       if (serializedState === null) {
         return undefined;
       }
@@ -17,7 +17,7 @@ const loadStateFromLocalStorage = () => {
   const saveStateToLocalStorage = (state) => {
     try {
       const serializedState = JSON.stringify(state);
-      localStorage.setItem("authState", serializedState);
+      localStorage.setItem("adminauthState", serializedState);
     } catch (error) {
       console.error("Failed to save state to localStorage:", error);
     }
@@ -40,7 +40,7 @@ const adminAuthSlice = createSlice({
             state.role = null;
             state.user = null;
 
-            localStorage.removeItem("authState")
+            localStorage.removeItem("adminauthState")
         } 
     }
 });

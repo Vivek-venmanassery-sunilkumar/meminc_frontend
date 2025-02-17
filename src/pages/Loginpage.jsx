@@ -10,6 +10,7 @@ import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { loginSuccess } from "@/redux/AuthSlice"
 import { loginSuccessAdmin } from "@/redux/AdminAuthSlice"
+import { loginSuccessVendor } from "@/redux/VendorAuthSlice"
 
 
 const LoginPage = () => {
@@ -29,24 +30,22 @@ const LoginPage = () => {
           toast.success('Welcom Admin');
           navigate('/admin/account-overview')
         }
-        else{
+        else if(response.data.role === 'customer'){
           const {role, first_name, last_name,phone_number, profile_picture} = response.data
-          console.log('phone_number and profile_picrure',phone_number,profile_picture)
+          console.log('phone_number and profile_picture',phone_number,profile_picture)
           dispatch(loginSuccess({email: logindata.email, role:role, first_name:first_name, last_name:last_name,phone_number: phone_number, profile_picture: profile_picture}))
           toast.success("Login Successfull")
-          switch (role) {
-            case 'customer':
-              navigate('/customer');
-              break;
-            case 'vendor':
-              navigate('/vendor/account-overview');
-              break;
-            default:
-              navigate('/');
+          navigate('/customer');
         }
+        else if(response.data.role === 'vendor'){
+          const {role, first_name, last_name, phone_number, profile_picture,company_name, street_address, city, state, country, pincode} = response.data
+          dispatch(loginSuccessVendor({email: logindata.email, role: role, first_name: first_name, last_name: last_name, phone_number: phone_number, profile_picture: profile_picture, company_name: company_name,street_address: street_address, city: city, state:state, country: country, pincode: pincode}))
+          toast.success("Login Successfull")
+          navigate('/vendor/account-overview')
         }
       }
-    }catch(error){
+    }
+    catch(error){
       const errorMessage = error.response.data.error
       toast.error(errorMessage)
       console.error('Login Error:', error);

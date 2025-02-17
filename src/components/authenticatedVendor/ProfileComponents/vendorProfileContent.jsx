@@ -11,6 +11,7 @@ import Dashboard from "./Dashboard";
 import Orders from './Orders'
 import Wallet from "./Wallet";
 import Products from "./Products";
+import VendorAccountOverview from "./AccountOverview";
 
 
 export default function VendorProfileContent() {
@@ -32,6 +33,7 @@ export default function VendorProfileContent() {
         <Tabs defaultValue="dashboard" className="w-full flex" onValueChange={setActiveTab}>
           {/* TabsList (Menu) on the left with fixed height */}
           <TabsList className="w-1/4 flex flex-col items-start space-y-2 pt-20 h-[calc(100vh-250px)] bg-gray-100 overflow-y-auto">
+            <TabsTrigger value = 'accountoverview' className='w-full text-left'>Account Overview</TabsTrigger>
             <TabsTrigger value="dashboard" className="w-full text-left">Dashboard</TabsTrigger>
             <TabsTrigger value="products" className="w-full text-left">Products</TabsTrigger>
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
@@ -47,6 +49,9 @@ export default function VendorProfileContent() {
 
           {/* TabsContent on the right */}
           <div className="w-3/4 pl-8">
+            <TabsContent value = 'accountoverview'>
+              <VendorAccountOverview/>
+            </TabsContent>
             <TabsContent value="dashboard">
               <Dashboard />
             </TabsContent>
