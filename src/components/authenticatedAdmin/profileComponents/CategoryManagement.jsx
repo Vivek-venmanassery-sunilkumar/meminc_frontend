@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import api from '@/axios/axiosInstance'; // Import your API instance
+import toast from 'react-hot-toast';
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -28,13 +29,18 @@ const CategoryManagement = () => {
     if (newCategory.trim()) {
       try {
         const response = await api.post('admin/categories/', { 
-          category_name: newCategory.trim(), 
-          is_enabled: true // By default, new categories are enabled
+          category: newCategory.trim(),
         }); // Replace with your backend endpoint
         setCategories([...categories, response.data]);
         setNewCategory('');
       } catch (error) {
-        console.error('Error adding category:', error);
+        const errorData = error.response?.data;
+
+          // Extract the first error message dynamically
+        const errorMessage = errorData 
+    ? Object.values(errorData)[0]?.error || Object.values(errorData)[0] 
+    : "An error occurred";
+    toast.error(errorMessage)
       }
     }
   };
@@ -45,7 +51,7 @@ const CategoryManagement = () => {
       const updatedCategory = { ...category, is_enabled: !category.is_enabled };
 
       // Update the category in the backend
-      await api.put(`admin/categories/${id}`, { 
+      await api.put(`admin/categories/${id}/`, { 
         is_enabled: updatedCategory.is_enabled 
       }); // Replace with your backend endpoint
 
