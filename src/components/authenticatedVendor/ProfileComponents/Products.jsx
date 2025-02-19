@@ -142,6 +142,18 @@ export default function Products() {
     });
   };
 
+  //error handling function
+  const extractErrorMessages = (data) => {
+    if (!data) return ["An unknown error occurred"];
+
+    if (typeof data === "string") return [data]; // Direct string error
+    if (Array.isArray(data)) return data.map(extractErrorMessages).flat(); // Handle arrays
+    if (typeof data === "object") return Object.values(data).map(extractErrorMessages).flat(); // Handle objects
+
+    return ["An error occurred"]; // Fallback
+  };
+
+
   // Remove variant from form
   const handleRemoveVariant = (variantIdToRemove) => {
     setNewProduct({
@@ -315,15 +327,18 @@ export default function Products() {
 
     try {
       let response;
+      console.log("formData",formData)
       
       // Different API endpoints for add vs edit
       if (isEditMode && editingProductId) {
+        console.log("FormData as JSON:", JSON.stringify(Object.fromEntries(formData.entries())));
         response = await api.put(`/vendor/products/${editingProductId}/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
+        console.log("FormData as JSON:", JSON.stringify(Object.fromEntries(formData.entries())));
         response = await api.post('/vendor/add-product/', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -339,8 +354,9 @@ export default function Products() {
       }
     } catch (error) {
       if (error.response && error.response.data) {
-        const errorMessages = Object.values(error.response.data).flat().join(", ");
-        toast.error(errorMessages);
+        const errors = extractErrorMessages(error.response.data);
+        const errorMessage = errors.join(", "); // Show all errors in one toast
+        toast.error(errorMessage);
       } else {
         toast.error(`Product could not be ${isEditMode ? 'updated' : 'added'} due to an error! Please try again later.`);
       }
