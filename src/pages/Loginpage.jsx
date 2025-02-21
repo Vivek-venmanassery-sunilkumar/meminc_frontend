@@ -11,15 +11,19 @@ import { useNavigate } from "react-router-dom"
 import { loginSuccess } from "@/redux/AuthSlice"
 import { loginSuccessAdmin } from "@/redux/AdminAuthSlice"
 import { loginSuccessVendor } from "@/redux/VendorAuthSlice"
+import GoogleAuth from "@/components/commoncomponents/GoogleAuth"
+import {ClipLoader} from 'react-spinners'
 
 
 const LoginPage = () => {
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [loading,setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
     // Handle login logic here
     try{
       const response = await api.post('/register/login/', logindata);
@@ -31,15 +35,16 @@ const LoginPage = () => {
           navigate('/admin/account-overview')
         }
         else if(response.data.role === 'customer'){
-          const {role, first_name, last_name,phone_number, profile_picture} = response.data
+          const {role, email, first_name, last_name,phone_number, profile_picture} = response.data
           console.log('phone_number and profile_picture',phone_number,profile_picture)
-          dispatch(loginSuccess({email: logindata.email, role:role, first_name:first_name, last_name:last_name,phone_number: phone_number, profile_picture: profile_picture}))
+          dispatch(loginSuccess({email: email, role:role, first_name:first_name, last_name:last_name,phone_number: phone_number, profile_picture: profile_picture}))
           toast.success("Login Successfull")
+          console.log(profile_picture)
           navigate('/customer');
         }
         else if(response.data.role === 'vendor'){
-          const {role, first_name, last_name, phone_number, profile_picture,company_name, street_address, city, state, country, pincode} = response.data
-          dispatch(loginSuccessVendor({email: logindata.email, role: role, first_name: first_name, last_name: last_name, phone_number: phone_number, profile_picture: profile_picture, company_name: company_name,street_address: street_address, city: city, state:state, country: country, pincode: pincode}))
+          const {role, email, first_name, last_name, phone_number, profile_picture,company_name, street_address, city, state, country, pincode} = response.data
+          dispatch(loginSuccessVendor({email: email, role: role, first_name: first_name, last_name: last_name, phone_number: phone_number, profile_picture: profile_picture, company_name: company_name,street_address: street_address, city: city, state:state, country: country, pincode: pincode}))
           toast.success("Login Successfull")
           navigate('/vendor/account-overview')
         }
@@ -50,8 +55,11 @@ const LoginPage = () => {
       toast.error(errorMessage)
       console.error('Login Error:', error);
     }
+    finally{
+      setLoading(false)
+    }
 
-  };
+  }
 
   const [logindata, setLoginData] = useState({
     email: '',
@@ -107,8 +115,8 @@ const LoginPage = () => {
                         className="bg-white border-[#4A5859] text-[#4A5859] placeholder-[#4A5859]/50"
                     />
                     </div>
-                    <Button type="submit" className="w-full bg-[#4A5859] text-[#F0EAD6] hover:bg-[#3A4849]">
-                    Log In
+                    <Button type="submit" className="w-full bg-[#4A5859] text-[#F0EAD6] hover:bg-[#3A4849]" disabled = {loading}>
+                    {loading ? <ClipLoader size = {20} color="F0EAD6"/>:'Log In'}
                     </Button>
                 </form>
                 <div className="mt-6 text-center">
@@ -118,9 +126,7 @@ const LoginPage = () => {
                     </span>
                </div>
               <div className="mt-6">
-                <Button variant="outline" className="w-full border-[#4A5859] text-[#4A5859] hover:bg-[#F0EAD6]">
-                  Sign up with Google
-                </Button>
+                <GoogleAuth/> 
               </div>
             </CardContent>
           </Card>

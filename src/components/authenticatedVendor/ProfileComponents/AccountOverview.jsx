@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import api from '@/axios/axiosInstance';
 import { loginSuccessVendor } from '@/redux/VendorAuthSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import extractErrorMessages from '@/components/commoncomponents/errorHandlefunc';
 
 export default function VendorAccountOverview() {
     const dispatch = useDispatch();
@@ -71,8 +72,9 @@ export default function VendorAccountOverview() {
             }
         } catch (error) {
             if (error.response && error.response.data) {
-                const errorMessages = Object.values(error.response.data).flat();
-                toast.error(errorMessages[0] || "Updation Failed");
+                const errors = extractErrorMessages(error.response.data);
+                const errorMessage = errors.join(", "); // Show all errors in one toast
+                toast.error(errorMessage);
             } else {
                 toast.error("Updation Failed.");
             }
@@ -124,7 +126,7 @@ export default function VendorAccountOverview() {
                     </div>
                     <div>
                         <label>Phone Number</label>
-                        <Input type="tel" name="phoneNumber" pattern="^[1-9][0-9]{9}$" value={formData.phoneNumber} onChange={handleChange} />
+                        <Input type="tel" name="phoneNumber" required pattern="^[1-9][0-9]{9}$" value={formData.phoneNumber} onChange={handleChange} />
                     </div>
                     <div>
                         <label>Company Name</label>

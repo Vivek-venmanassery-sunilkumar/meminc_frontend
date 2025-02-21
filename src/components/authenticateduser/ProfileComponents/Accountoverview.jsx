@@ -174,6 +174,7 @@ export default function AccountOverview() {
       [name]: value,
     });
   };
+  console.log('profilepicture url insie account overview',profilePicture)
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -279,6 +280,7 @@ export default function AccountOverview() {
               id="email"
               type="email"
               name="email"
+              required
               placeholder="Email"
               value={formData.email}
               onChange={handleChange}
@@ -290,6 +292,7 @@ export default function AccountOverview() {
               id="phoneNumber"
               type="tel"
               name="phoneNumber"
+              required
               pattern="^[1-9][0-9]{9}$"
               placeholder="Phone Number"
               value={formData.phoneNumber}

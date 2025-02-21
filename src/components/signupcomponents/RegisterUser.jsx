@@ -6,18 +6,54 @@ import { toast } from 'react-hot-toast'
 import api from "@/axios/axiosInstance"
 import { setEmailForOtp } from "@/redux/OtpValidation"
 import {useDispatch} from "react-redux"
+import { ClipLoader } from "react-spinners"
 
 
 
 
 const RegisterUser = ({ onSubmit }) => {
+  const [loading,setLoading] = useState(false)
   const dispatch = useDispatch();
+
+   const validateForm = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Standard email format
+    const nameRegex = /^[A-Za-z]+$/; // Only letters allowed for first name
+    const phoneRegex = /^[0-9]{10}$/; // Assumes 10-digit phone number
+
+    if (!registerData.email.match(emailRegex)) {
+      toast.error("Invalid email format");
+      return false;
+    }
+
+    if (!registerData.first_name.match(nameRegex)) {
+      toast.error("First name should contain only letters");
+      return false;
+    }
+
+    if (!registerData.phone_number.match(phoneRegex)) {
+      toast.error("Phone number should be 10 digits");
+      return false;
+    }
+
+    if (registerData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return false;
+    }
+
+    if (registerData.password !== registerData.confirm_password) {
+      toast.error("Passwords do not match");
+      return false;
+    }
+
+    return true; // If all validations pass
+  }
+
+
+
   const handleSubmit =async (e) => {
     e.preventDefault()
-    if(registerData.password !== registerData.confirm_password){
-      toast.error("passwords do not match");
-      return;
-    }
+    if(validateForm()){
+    setLoading(true)
     try {
       const response = await api.post("/register/customer/", registerData);
       if(response.status === 200){
@@ -32,6 +68,9 @@ const RegisterUser = ({ onSubmit }) => {
         toast.error(errorMessages[0] || "Registration failed");
       }else{
         toast.error("Something went wrong. Please try again.");
+      }
+    }finally{
+      setLoading(false)
       }
     }
   }
@@ -114,12 +153,13 @@ const RegisterUser = ({ onSubmit }) => {
                onChange = {handleChange} 
             />
       </div>
-      <Button type="submit" className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white">
-        Register
+      <Button type="submit" className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white" disabled = {loading}>
+        {loading ? <ClipLoader size = {20} color="F0EAD6"/>:'Register'}
       </Button>
     </form>
   )
 }
+
 
 export default RegisterUser
 

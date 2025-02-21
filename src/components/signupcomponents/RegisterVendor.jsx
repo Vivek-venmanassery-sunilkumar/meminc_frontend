@@ -6,36 +6,13 @@ import { toast } from 'react-hot-toast'
 import api from '@/axios/axiosInstance'
 import { useDispatch } from "react-redux"
 import { setEmailForOtp } from "@/redux/OtpValidation"
+import { ClipLoader } from "react-spinners"
 
 
 const RegisterVendor = ({ onSubmit }) => {
-
+  const [loading,setLoading] = useState(false)
   const dispatch = useDispatch()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if(registerdata.password!==registerdata.confirm_password){
-      toast.error('passwords do not match.')
-      return
-    }
-    try{
-      const response = await api.post('register/vendor/', registerdata)
-      if(response.status == 200){
-        console.log("vendor email:",response.data.email)
-        dispatch(setEmailForOtp(response.data.email))
-        toast.success('Otp Sent to your Email')
-        onSubmit()
-      }
-    }catch(error){
-      if(error.response && error.response.data){
-        const errorMessages = Object.values(error.response.data).flat()
-        toast.error(errorMessages[0] || "Registration Failed");
-      }else{
-        toast.error("something went wrong.Please try again")
-      }
-    }
-    
-  }
 
   const data = {
     first_name: '',
@@ -51,8 +28,83 @@ const RegisterVendor = ({ onSubmit }) => {
     country: '',
     pincode: '',
   }
-
   const [registerdata, setRegisterData] = useState(data)
+
+  const validateForm = () => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Standard email format
+  const nameRegex = /^[A-Za-z]+$/; // Only letters allowed for first name & company name
+  const phoneRegex = /^[0-9]{10}$/; // 10-digit phone number
+  const pincodeRegex = /^[0-9]{6}$/;
+  const companyNameRegex = /^[A-Za-z\s]+$/; 
+
+  if (!registerdata.email.match(emailRegex)) {
+    toast.error("Invalid email format");
+    return false;
+  }
+
+  if (!registerdata.first_name.match(nameRegex)) {
+    toast.error("First name should contain only letters");
+    return false;
+  }
+
+  if (!registerdata.company_name.match(companyNameRegex)) {
+    toast.error("Company name should contain only letters");
+    return false;
+  }
+
+  if (!registerdata.phone_number.match(phoneRegex)) {
+    toast.error("Phone number should be 10 digits");
+    return false;
+  }
+
+  if (!registerdata.pincode.match(pincodeRegex)) {
+    toast.error("Pincode should be exactly 6 digits");
+    return false;
+  }
+
+  if (registerdata.password.length < 6) {
+    toast.error("Password must be at least 6 characters long");
+    return false;
+  }
+
+  if (registerdata.password !== registerdata.confirm_password) {
+    toast.error("Passwords do not match");
+    return false;
+  }
+
+  return true; // If all validations pass
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if(validateForm()){
+    setLoading(true)
+    try{
+      const response = await api.post('register/vendor/', registerdata)
+      if(response.status == 200){
+        console.log("vendor email:",response.data.email)
+        dispatch(setEmailForOtp(response.data.email))
+        toast.success('Otp Sent to your Email')
+        onSubmit()
+      }
+    }catch(error){
+      if(error.response && error.response.data){
+        const errorMessages = Object.values(error.response.data).flat()
+        toast.error(errorMessages[0] || "Registration Failed");
+      }else{
+        toast.error("something went wrong.Please try again")
+      }
+    }finally{
+      setLoading(false)
+    }   
+  }
+  }
+
+
+
+  
   const handleChange = (e)=>{
    const {name, value} = e.target;
    setRegisterData((prevData)=>({
@@ -181,8 +233,8 @@ const RegisterVendor = ({ onSubmit }) => {
                  />
         </div>
       </div>
-      <Button type="submit" className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white">
-        Register
+      <Button type="submit" className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white" disabled = {loading}>
+      {loading ? <ClipLoader size = {20} color="F0EAD6"/>:'Register'}
       </Button>
     </form>
   )
