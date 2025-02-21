@@ -3,9 +3,16 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "@/axios/axiosInstance";
+import extractErrorMessages from "../commoncomponents/errorHandlefunc";
+import { useDispatch } from "react-redux";
+import { clearProductDetails, setProductDetails } from "@/redux/ProductDetailsSlice";
 
 export default function ProductListing({ products, selectedBrand, handleBrandFilter, selectedVariants, setSelectedVariants }) {
     const [cart, setCart] = useState([]);
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     // Add product to cart with selected variant
     const addToCart = (product, variant) => {
@@ -26,6 +33,24 @@ export default function ProductListing({ products, selectedBrand, handleBrandFil
     // Format price in INR
     const formatPrice = (price) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(price);
 
+    const handleCardClick = async (productId)=>{
+        try{
+            const response = await api.get(`vendor/products/${productId}`)
+            if(response.status == 200){
+                dispatch(clearProductDetails())
+                dispatch(setProductDetails({...response.data}))
+                navigate('product-view')
+            }
+        }catch(error){
+            if (error.response && error.response.data) {
+                const errors = extractErrorMessages(error.response.data);
+                const errorMessage = errors.join(", "); // Show all errors in one toast
+                toast.error(errorMessage);
+            } else {
+                toast.error("Updation Failed.");
+            }
+        }
+    }
     return (
         <div className="container mx-auto py-8 px-4 font-gentium">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
@@ -45,26 +70,34 @@ export default function ProductListing({ products, selectedBrand, handleBrandFil
                     const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId) || product.variants[0];
 
                     return (
-                        <Card key={product.id} className="bg-[#F0EAD6] text-[#4A5859]">
-                            <CardContent className="p-4">
-                                {product.product_image && <img src={product.product_image} alt={product.product_name} className="w-full h-48 object-cover rounded mb-4" />}
-                                <p className="text-lg font-bold">{product.product_name}</p>
-                                <p className="text-sm text-gray-600">{product.company_name}</p>
-                                <select
-                                    className="border rounded p-1 w-full mt-2"
-                                    value={selectedVariantId}
-                                    onChange={(e) => handleVariantChange(product.id, parseInt(e.target.value))}
-                                >
-                                    {product.variants.map((variant) => (
-                                        <option key={variant.id} value={variant.id}>{variant.name}</option>
-                                    ))}
-                                </select>
-                                <p className="text-lg font-bold mt-2">{formatPrice(selectedVariant?.price)}</p>
-                            </CardContent>
-                            <CardFooter className="flex justify-between items-center p-4 bg-[#E6DCC8]">
-                                <Button variant="outline" className="bg-[#4A5859] text-white hover:bg-[#3A4849]" onClick={() => addToCart(product, selectedVariant)}>Add to Cart</Button>
-                            </CardFooter>
-                        </Card>
+                        <div key={product.id} onClick={() => handleCardClick(product.id)}> {/* Add onClick handler */}
+                            <Card className="bg-[#F0EAD6] text-[#4A5859] cursor-pointer"> {/* Add cursor-pointer for better UX */}
+                                <CardContent className="p-4">
+                                    {product.product_image && <img src={product.product_image} alt={product.product_name} className="w-full h-48 object-cover rounded mb-4" />}
+                                    <p className="text-lg font-bold">{product.product_name}</p>
+                                    <p className="text-sm text-gray-600">{product.company_name}</p>
+                                    <select
+                                        className="border rounded p-1 w-full mt-2"
+                                        value={selectedVariantId}
+                                        onClick={(e)=>e.stopPropagation()}
+                                        onChange={(e) => {
+                                            handleVariantChange(product.id, parseInt(e.target.value))}
+                                        }
+                                    >
+                                        {product.variants.map((variant) => (
+                                            <option key={variant.id} value={variant.id}>{variant.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-lg font-bold mt-2">{formatPrice(selectedVariant?.price)}</p>
+                                </CardContent>
+                                <CardFooter className="flex justify-between items-center p-4 bg-[#E6DCC8]">
+                                    <Button variant="outline" className="bg-[#4A5859] text-white hover:bg-[#3A4849]" onClick={(e) => {
+                                        e.stopPropagation(); // Prevent card click event from firing
+                                        addToCart(product, selectedVariant);
+                                    }}>Add to Cart</Button>
+                                </CardFooter>
+                            </Card>
+                        </div>
                     );
                 })}
             </div>

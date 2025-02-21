@@ -8,6 +8,7 @@ import { AdminRoute, Forbidden, UserRoute, VendorRoute } from '@/routes/Index'
 import UserProfile from "./pages/User/UserProfile";
 import AdminProfile from "./pages/Admin/AdminProfile";
 import VendorProfile from "./pages/Vendor/VendorProfile";
+import ProductDetailsPage from "./pages/User/productDetailsPage";
 
 
 
@@ -22,8 +23,8 @@ export default function App(){
         <Route path="/adminprofile" element={<AdminProfile/>}/>
        
         {/* Protected Routes */}
-{/* 
-        customer routes */}
+      
+        {/*customer routes */}
         <Route
           path="/customer"
           element={
@@ -36,6 +37,13 @@ export default function App(){
           element = {
             <UserRoute>
               <UserProfile/>
+            </UserRoute>
+          }/>
+        <Route
+          path="/customer/product-view"
+          element={
+            <UserRoute>
+              <ProductDetailsPage/>
             </UserRoute>
           }/>
 
