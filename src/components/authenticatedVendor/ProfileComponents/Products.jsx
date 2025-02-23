@@ -11,6 +11,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import api from '@/axios/axiosInstance'; // Assuming you have an API utility
 import CategoryDropdown from './CategoryDropDown'; // Import the CategoryDropdown component
 
+
 export default function Products() {
   // ==================== State Management ====================
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,11 +81,20 @@ export default function Products() {
           isExisting: true // Flag to identify existing images
         }));
         
+        // Preserve variant IDs
+        const formattedVariants = variants.map(variant => ({
+          id: variant.id, // Preserve the variant ID
+          quantity: variant.quantity,
+          price: variant.price,
+          stock: variant.stock,
+          variant_unit: variant.variant_unit,
+        }));
+        
         setNewProduct({
           name,
           description,
           category,
-          variants,
+          variants: formattedVariants,
           images: formattedImages,
         });
         setImagesToDelete([]); // Reset images to delete when starting a new edit
@@ -137,22 +147,10 @@ export default function Products() {
       ...newProduct,
       variants: [
         ...newProduct.variants,
-        { id: Date.now(), quantity: 0, price: 0, stock: 0, variant_unit: "" },
+        { id: Date.now(), quantity: 0, price: 0, stock: 0, variant_unit: "" }, // Temporary ID for new variants
       ],
     });
   };
-
-  //error handling function
-  const extractErrorMessages = (data) => {
-    if (!data) return ["An unknown error occurred"];
-
-    if (typeof data === "string") return [data]; // Direct string error
-    if (Array.isArray(data)) return data.map(extractErrorMessages).flat(); // Handle arrays
-    if (typeof data === "object") return Object.values(data).map(extractErrorMessages).flat(); // Handle objects
-
-    return ["An error occurred"]; // Fallback
-  };
-
 
   // Remove variant from form
   const handleRemoveVariant = (variantIdToRemove) => {
@@ -318,6 +316,7 @@ export default function Products() {
 
     // Process variants
     const variants = newProduct.variants.map((variant) => ({
+      id: variant.id, // Include the variant ID
       quantity: Number(variant.quantity),
       price: Number(variant.price),
       stock: Number(variant.stock),
@@ -327,7 +326,7 @@ export default function Products() {
 
     try {
       let response;
-      console.log("formData",formData)
+      console.log("formData", formData)
       
       // Different API endpoints for add vs edit
       if (isEditMode && editingProductId) {
@@ -375,7 +374,6 @@ export default function Products() {
     const productToEdit = products[productIndex];
     
     // Important: Use the product ID from the API response
-    // This is the key change - ensuring we're using the actual product_id that came from the backend
     const productId = productToEdit.id;
     
     // Set edit mode flags and store the ID

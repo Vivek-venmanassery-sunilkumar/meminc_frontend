@@ -22,7 +22,7 @@ export default function AdminProfileContent() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const handleLogout = async ()=>{
-    const response = await api.post('register/logout/')
+    const response = await api.post('register/logout/')  
     if(response.status === 200){
       dispatch(logout())
       navigate('/')

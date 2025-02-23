@@ -13,6 +13,7 @@ import { loginSuccessAdmin } from "@/redux/AdminAuthSlice"
 import { loginSuccessVendor } from "@/redux/VendorAuthSlice"
 import GoogleAuth from "@/components/commoncomponents/GoogleAuth"
 import {ClipLoader} from 'react-spinners'
+import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc"
 
 
 const LoginPage = () => {
@@ -51,11 +52,14 @@ const LoginPage = () => {
       }
     }
     catch(error){
-      const errorMessage = error.response.data.error
-      toast.error(errorMessage)
-      console.error('Login Error:', error);
+      if (error.response && error.response.data) {
+                const errors = extractErrorMessages(error.response.data);
+                const errorMessage = errors.join(", "); // Show all errors in one toast
+                toast.error(errorMessage);
+            } else {
+          toast.error("Invalid Credentials.");
     }
-    finally{
+    }finally{
       setLoading(false)
     }
 

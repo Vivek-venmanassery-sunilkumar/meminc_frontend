@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Plus, Minus, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-
 export default function ProductDetails() {
   // Fetch product details from the Redux store
   const product = useSelector((state) => state.product);
@@ -51,7 +50,7 @@ export default function ProductDetails() {
 
   return (
     <div className="container mx-auto px-4 pt-24 pb-8 min-h-screen">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white rounded-lg p-6 shadow-2xl"> {/* Increased shadow */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white rounded-lg p-6 shadow-2xl">
         {/* Image Section */}
         <div className="space-y-4">
           <div className="relative aspect-square overflow-hidden rounded-lg cursor-zoom-in" onClick={handleImageZoom}>
@@ -82,15 +81,13 @@ export default function ProductDetails() {
         </div>
 
         {/* Details Section */}
-        <div className="space-y-6 mt-8"> {/* Added margin-top to align details below the image */}
+        <div className="space-y-6 mt-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
             <p className="text-sm text-gray-500">Premium Meat Market</p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-gray-700">{product.description}</p>
-
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-900">Select Variant</h3>
               {product.variants.map((variant) => (
@@ -118,7 +115,7 @@ export default function ProductDetails() {
                   Add to Cart
                 </Button>
               ) : (
-                <div className="flex items-center gap-4 w-full">
+                <div className="flex justify-center items-center gap-4 w-full">
                   <Button variant="outline" size="icon" onClick={() => handleQuantityChange("decrease")}>
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -132,9 +129,13 @@ export default function ProductDetails() {
                 <Heart className="h-5 w-5" />
               </Button>
             </div>
-          </div>
 
-          {/* Removed product category and stock details */}
+            {/* Product Details Section */}
+            <div className="mt-6"> {/* Added margin-top for spacing */}
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Product Details</h3>
+              <p className="text-gray-700">{product.description}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
