@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import api from "@/axios/axiosInstance";
 import { toast } from "react-hot-toast";
 import { ClipLoader } from "react-spinners";
+import extractErrorMessages from "./errorHandlefunc";
 
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmailState] = useState(""); // State for email input
+  const [loading, setLoading] = useState(false); // State for loading spinner
 
+  // Handle email submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
@@ -18,18 +20,24 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      const response = await api.post("/register/forgot-password/", { email });
+      const response = await api.post("/register/password-reset/", { email });
       if (response.status === 200) {
         toast.success("Password reset instructions have been sent to your email.");
         onClose(); // Close the modal after successful submission
       }
     } catch (error) {
+      if(error.response && error.response.data){
+        const errorMessage = extractErrorMessages(error.response.data);
+        toast.error(errorMessage)
+      }else{
       toast.error("Failed to send reset instructions. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Don't render anything if the modal is not open
   if (!isOpen) return null;
 
   return (
@@ -44,7 +52,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmailState(e.target.value)}
             className="bg-white border-[#4A5859] text-[#4A5859] placeholder-[#4A5859]/50"
           />
           <div className="flex justify-end gap-4">

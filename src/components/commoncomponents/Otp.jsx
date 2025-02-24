@@ -8,6 +8,7 @@ import { clearOtpValidation } from "@/redux/OtpValidation"
 import api from "@/axios/axiosInstance"
 import {toast} from 'react-hot-toast'
 import { useNavigate } from "react-router-dom"
+import extractErrorMessages from "./errorHandlefunc"
 
 
 
@@ -58,9 +59,8 @@ const OtpModal = ({ onVerified, onClose,onAttemptrunOut }) => {
       }
     }catch(error){
       if(error.response && error.response.data){
-        const errorMessages = Object.values(error.response.data).flat()
-        console.log(errorMessages)
-        toast.error(errorMessages[0] || "Registration Failed");
+        const errorMessage = extractErrorMessages(error.response.data) 
+        toast.error(errorMessage || "Registration Failed");
       }else{
         toast.error("something went wrong.Please try again")
       }

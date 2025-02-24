@@ -9,6 +9,7 @@ import UserProfile from "./pages/User/UserProfile";
 import AdminProfile from "./pages/Admin/AdminProfile";
 import VendorProfile from "./pages/Vendor/VendorProfile";
 import ProductDetailsPage from "./pages/User/productDetailsPage";
+import ResetPasswordModal from "./components/commoncomponents/ResetPasswordModal";
 
 
 
@@ -21,6 +22,7 @@ export default function App(){
         <Route path="/register" element={<Registerpage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/adminprofile" element={<AdminProfile/>}/>
+        <Route path='/reset-password' element = {<ResetPasswordModal/>}/>
        
         {/* Protected Routes */}
       
