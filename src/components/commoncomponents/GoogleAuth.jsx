@@ -42,8 +42,8 @@ const GoogleAuth = () => {
         .catch((err) => {
             if (err.response) {
                 // Backend responded with an error
-                const errorMessage = err.response.data.error || "An unknown error occurred";
-                console.log(err.response.data.error)
+                let errorMessage = err.response.data.error || "An unknown error occurred";
+                console.log(errorMessage)
             } else if (err.request) {
                 // No response was received (network error)
                 errorMessage = "No response from server. Please try again.";
