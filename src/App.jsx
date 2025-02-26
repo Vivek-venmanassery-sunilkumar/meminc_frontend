@@ -11,6 +11,7 @@ import VendorProfile from "./pages/Vendor/VendorProfile";
 import ProductDetailsPage from "./pages/User/productDetailsPage";
 import ResetPasswordModal from "./components/commoncomponents/ResetPasswordModal";
 import CartPage from "./pages/User/CartPage";
+import CheckoutPage from "./pages/User/CheckoutPage";
 
 
 
@@ -54,6 +55,13 @@ export default function App(){
           element={
             <UserRoute>
               <CartPage/>
+            </UserRoute>
+          }/>
+        <Route
+          path="/customer/checkout"
+          element={
+            <UserRoute>
+              <CheckoutPage/>
             </UserRoute>
           }/>
 

@@ -67,7 +67,7 @@ const Cart = () => {
   }
 
   const handleProceedToCheckout = () => {
-    navigate("/checkout")
+    navigate("/customer/checkout")
   }
 
   const handleContinueShopping = () => {
