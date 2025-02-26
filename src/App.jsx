@@ -10,6 +10,7 @@ import AdminProfile from "./pages/Admin/AdminProfile";
 import VendorProfile from "./pages/Vendor/VendorProfile";
 import ProductDetailsPage from "./pages/User/productDetailsPage";
 import ResetPasswordModal from "./components/commoncomponents/ResetPasswordModal";
+import CartPage from "./pages/User/CartPage";
 
 
 
@@ -46,6 +47,13 @@ export default function App(){
           element={
             <UserRoute>
               <ProductDetailsPage/>
+            </UserRoute>
+          }/>
+        <Route
+          path="/customer/cart"
+          element={
+            <UserRoute>
+              <CartPage/>
             </UserRoute>
           }/>
 

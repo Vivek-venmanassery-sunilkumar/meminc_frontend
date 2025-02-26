@@ -8,6 +8,7 @@ import api from "@/axios/axiosInstance";
 import BannerCarousel from "@/components/commoncomponents/Carousalcommon";
 import { useDispatch } from "react-redux";
 import { setCartData } from "@/redux/cartSlice"; // Import the action
+import { useNavigate } from "react-router-dom";
 
 export default function LoggedInUserHomepage() {
     const [products, setProducts] = useState([]);
@@ -16,7 +17,6 @@ export default function LoggedInUserHomepage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedVariants, setSelectedVariants] = useState({});
     const dispatch = useDispatch(); // Initialize dispatch
-
     // Fetch products from API
     const fetchProducts = async (page = 1, brand = "All") => {
         let url = `customer/home/?page=${page}`;
