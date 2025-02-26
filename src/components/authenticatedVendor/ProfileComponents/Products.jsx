@@ -10,6 +10,7 @@ import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import api from '@/axios/axiosInstance'; // Assuming you have an API utility
 import CategoryDropdown from './CategoryDropDown'; // Import the CategoryDropdown component
+import extractErrorMessages from '@/components/commoncomponents/errorHandlefunc';
 
 
 export default function Products() {

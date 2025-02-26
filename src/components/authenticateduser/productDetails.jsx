@@ -1,18 +1,24 @@
 import { useState } from "react";
-import { useSelector } from "react-redux"; // Import useSelector
+import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Minus, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { updateCartItem, setCartData} from '../../redux/CartSlice'; // Import setCartData
+import api from "@/axios/axiosInstance"; // Import your Axios instance
 
 export default function ProductDetails() {
-  // Fetch product details from the Redux store
+  const dispatch = useDispatch();
   const product = useSelector((state) => state.product);
+  const cart = useSelector((state) => state.cart);
 
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [selectedVariant, setSelectedVariant] = useState(product.variants[0]);
-  const [quantity, setQuantity] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const cartItem = cart.items.find((item) => item.variant_id === selectedVariant.id);
+  const quantityInCart = cartItem ? cartItem.quantity : 0;
 
   const handleImageClick = (image) => {
     setSelectedImage(image);
@@ -20,30 +26,37 @@ export default function ProductDetails() {
 
   const handleVariantSelect = (variant) => {
     setSelectedVariant(variant);
-    setQuantity(0);
   };
 
-  const handleQuantityChange = (action) => {
-    if (action === "increase") {
-      setQuantity(quantity + 1);
-    } else if (action === "decrease") {
-      if (quantity === 1) {
-        setQuantity(0);
+  const handleQuantityChange = async (action) => {
+    setIsLoading(true);
+
+    try {
+      // Use the Axios instance to send the request
+      const response = await api.post("/cart/", {
+        variant_id: selectedVariant.id,
+        action, // Send the action ("increase" or "decrease")
+      });
+
+      if (response.status === 204) {
+        // Item was removed, fetch the entire cart again
+        const cartResponse = await api.get("/cart/");
+        dispatch(setCartData(cartResponse.data)); // Update Redux store with the full cart data
       } else {
-        setQuantity(quantity - 1);
+        // Item was updated, update the Redux store with the response data
+        dispatch(updateCartItem(response.data));
       }
+    } catch (error) {
+      console.error("Failed to update cart:", error);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleAddToCart = () => {
-    setQuantity(1);
   };
 
   const handleImageZoom = () => {
     setIsZoomed(!isZoomed);
   };
 
-  // If no product data is available, show a loading state or a message
   if (!product.id) {
     return <div>Loading product details...</div>;
   }
@@ -110,17 +123,31 @@ export default function ProductDetails() {
             </div>
 
             <div className="flex items-center gap-4">
-              {quantity === 0 ? (
-                <Button className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white" onClick={handleAddToCart}>
-                  Add to Cart
+              {quantityInCart === 0 ? (
+                <Button
+                  className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white"
+                  onClick={() => handleQuantityChange("increase")}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Adding..." : "Add to Cart"}
                 </Button>
               ) : (
                 <div className="flex justify-center items-center gap-4 w-full">
-                  <Button variant="outline" size="icon" onClick={() => handleQuantityChange("decrease")}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleQuantityChange("decrease")}
+                    disabled={isLoading}
+                  >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="text-xl font-semibold">{quantity}</span>
-                  <Button variant="outline" size="icon" onClick={() => handleQuantityChange("increase")}>
+                  <span className="text-xl font-semibold">{quantityInCart}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleQuantityChange("increase")}
+                    disabled={isLoading}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -131,7 +158,7 @@ export default function ProductDetails() {
             </div>
 
             {/* Product Details Section */}
-            <div className="mt-6"> {/* Added margin-top for spacing */}
+            <div className="mt-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Product Details</h3>
               <p className="text-gray-700">{product.description}</p>
             </div>

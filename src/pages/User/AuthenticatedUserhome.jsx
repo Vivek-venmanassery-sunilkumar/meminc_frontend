@@ -1,16 +1,21 @@
+
+
 import { useState, useEffect } from "react";
 import LoggedInUserHeader from "@/components/authenticateduser/loggedInUserHeader";
 import ProductListing from "@/components/authenticateduser/productlisting";
 import Footer from "@/components/commoncomponents/Footer";
 import api from "@/axios/axiosInstance";
 import BannerCarousel from "@/components/commoncomponents/Carousalcommon";
+import { useDispatch } from "react-redux";
+import { setCartData } from "@/redux/cartSlice"; // Import the action
 
 export default function LoggedInUserHomepage() {
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState({ count: 0, totalPages: 0, next: null, previous: null });
     const [selectedBrand, setSelectedBrand] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedVariants, setSelectedVariants] = useState({}); // Maintain selected variants across pages
+    const [selectedVariants, setSelectedVariants] = useState({});
+    const dispatch = useDispatch(); // Initialize dispatch
 
     // Fetch products from API
     const fetchProducts = async (page = 1, brand = "All") => {
@@ -32,6 +37,20 @@ export default function LoggedInUserHomepage() {
             console.error("Error fetching products:", error);
         }
     };
+
+    // Fetch cart data on initial render
+    useEffect(() => {
+        const fetchCartData = async () => {
+            try {
+                const response = await api.get('/cart/'); // Assuming the endpoint is '/cart/'
+                dispatch(setCartData(response.data)); // Dispatch cart data to Redux
+            } catch (error) {
+                console.error("Error fetching cart data:", error);
+            }
+        };
+
+        fetchCartData();
+    }, [dispatch]);
 
     // Fetch products when page or filter changes
     useEffect(() => {
@@ -58,7 +77,7 @@ export default function LoggedInUserHomepage() {
                     selectedBrand={selectedBrand}
                     handleBrandFilter={handleBrandFilter}
                     selectedVariants={selectedVariants}
-                    setSelectedVariants={setSelectedVariants} // Pass selected variants state
+                    setSelectedVariants={setSelectedVariants}
                 />
                 <div className="flex justify-center mt-4 space-x-4">
                     <button onClick={handlePreviousPage} disabled={!pagination.previous} className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50">Previous</button>
@@ -70,4 +89,3 @@ export default function LoggedInUserHomepage() {
         </>
     );
 }
-
