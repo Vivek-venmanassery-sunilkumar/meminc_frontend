@@ -1,4 +1,5 @@
 
+
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -91,6 +92,7 @@ export default function ProductListing({ products, selectedBrand, handleBrandFil
                 {products.map((product) => {
                     const selectedVariantId = selectedVariants[product.id] || product.variants[0]?.id;
                     const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId) || product.variants[0];
+                    const isOutOfStock = selectedVariant?.is_out_of_stock;
 
                     return (
                         <div key={product.id} onClick={() => handleCardClick(product.id)}>
@@ -110,6 +112,9 @@ export default function ProductListing({ products, selectedBrand, handleBrandFil
                                         ))}
                                     </select>
                                     <p className="text-lg font-bold mt-2">{formatPrice(selectedVariant?.price)}</p>
+                                    {isOutOfStock && (
+                                        <p className="text-red-500 text-sm mt-2">Out of Stock</p>
+                                    )}
                                 </CardContent>
                                 <CardFooter className="flex justify-between items-center p-4 bg-[#E6DCC8]">
                                     <Button
@@ -119,7 +124,7 @@ export default function ProductListing({ products, selectedBrand, handleBrandFil
                                             e.stopPropagation();
                                             addToCart(product, selectedVariant);
                                         }}
-                                        disabled={isVariantInCart(selectedVariantId)} // Disable if variant is in cart
+                                        disabled={isVariantInCart(selectedVariantId) || isOutOfStock} // Disable if variant is in cart or out of stock
                                     >
                                         {isVariantInCart(selectedVariantId) ? "Added to Cart" : "Add to Cart"}
                                     </Button>

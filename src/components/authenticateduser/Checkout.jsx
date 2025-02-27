@@ -1,19 +1,38 @@
-
 import { useState, useEffect } from "react"
 import { useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent } from "@/components/ui/card"
-import { ShoppingBag, MapPin, CreditCard, Loader2, AlertCircle } from "lucide-react"
+import { ShoppingBag, MapPin, CreditCard, Loader2, AlertCircle, CheckCircle } from "lucide-react"
 import api from "@/axios/axiosInstance"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useDispatch } from "react-redux"
+import { clearCart } from "@/redux/CartSlice"
+import toast from "react-hot-toast"
 
 export default function Checkout() {
   const [addresses, setAddresses] = useState([])
   const [selectedAddress, setSelectedAddress] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [orderSuccess, setOrderSuccess] = useState(false)
+
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   // Access the cart state
   const cart = useSelector((state) => state.cart)
@@ -39,9 +58,36 @@ export default function Checkout() {
   }, [])
 
   const handlePlaceOrder = () => {
-    console.log("Selected Address:", selectedAddress)
-    console.log("Payment Mode: Cash on Delivery")
-    alert("Order placed successfully!")
+    setShowConfirmDialog(true)
+  }
+
+  const confirmOrder = async () => {
+    setIsPlacingOrder(true)
+    try {
+      // Make API call to place the order
+      const orderData = {
+        address_id: selectedAddress,
+        payment_mode: "cash_on_delivery",
+        items: items.map((item) => ({
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+        })),
+        total_price: totalPrice,
+      }
+
+      const response = await api.post("cart/checkout/", orderData)
+      console.log("Order placed:", response.data)
+
+      // Set order success and show confirmation
+      setOrderSuccess(true)
+      toast.success('Order placed successfully')
+      dispatch(clearCart())
+      navigate('/customer')
+    } catch (err) {
+      setError(err.message || "Failed to place order")
+    }finally{
+      setIsPlacingOrder(false)
+    }
   }
 
   if (isLoading) {
@@ -203,6 +249,53 @@ export default function Checkout() {
           </Button>
         </div>
       </div>
+
+      {/* Order Confirmation Dialog */}
+      <AlertDialog
+        open={showConfirmDialog}
+        onOpenChange={(open) => {
+          // Only allow closing if not in success state
+          if (!orderSuccess) {
+            setShowConfirmDialog(open)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{orderSuccess ? "Order Placed Successfully!" : "Confirm Your Order"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {orderSuccess ? (
+                <div className="flex flex-col items-center justify-center py-4">
+                  <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
+                  <div>Your order has been placed successfully!</div>
+                  <div className="text-sm text-muted-foreground mt-1">Redirecting to your orders...</div>
+                </div>
+              ) : (
+                "Are you sure you want to place this order? This action cannot be undone."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!orderSuccess && (
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPlacingOrder}>No, Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmOrder}
+                disabled={isPlacingOrder}
+                className="bg-[#4A5859] hover:bg-[#3A4849]"
+              >
+                {isPlacingOrder ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Yes, Place Order"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

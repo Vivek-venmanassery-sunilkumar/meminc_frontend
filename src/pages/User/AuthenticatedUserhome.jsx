@@ -8,7 +8,7 @@ import api from "@/axios/axiosInstance";
 import BannerCarousel from "@/components/commoncomponents/Carousalcommon";
 import { useDispatch } from "react-redux";
 import { setCartData } from "@/redux/cartSlice"; // Import the action
-import { useNavigate } from "react-router-dom";
+
 
 export default function LoggedInUserHomepage() {
     const [products, setProducts] = useState([]);

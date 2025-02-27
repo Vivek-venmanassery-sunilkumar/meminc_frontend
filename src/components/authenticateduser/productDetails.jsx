@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Minus, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateCartItem, setCartData} from '../../redux/CartSlice'; // Import setCartData
+import { updateCartItem, setCartData } from '../../redux/CartSlice'; // Import setCartData
 import api from "@/axios/axiosInstance"; // Import your Axios instance
 
 export default function ProductDetails() {
@@ -123,7 +123,14 @@ export default function ProductDetails() {
             </div>
 
             <div className="flex items-center gap-4">
-              {quantityInCart === 0 ? (
+              {selectedVariant.is_out_of_stock ? (
+                <Button
+                  className="w-full bg-gray-400 text-white"
+                  disabled
+                >
+                  Out of Stock
+                </Button>
+              ) : quantityInCart === 0 ? (
                 <Button
                   className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white"
                   onClick={() => handleQuantityChange("increase")}
