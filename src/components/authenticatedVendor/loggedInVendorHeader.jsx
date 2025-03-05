@@ -17,7 +17,7 @@ export default function LoggedInSellerHeader() {
           <Button variant="ghost" className="text-white">
             <DollarSign className="h-5 w-5" />
           </Button>
-          <Link to={'/vendor/account-overview'}>
+          <Link to={'/vendor-profile/account-overview'}>
           <Button variant="ghost" className="text-white">
             <User className="h-5 w-5" />
           </Button>

@@ -87,7 +87,7 @@ export default function LoggedInUserHeader() {
                   </span>
                 )}
               </Button>
-              <Link to={'/customer/account-overview'}>
+              <Link to={'/customer-profile/account-overview'}>
                 <Button variant="ghost" className="text-white">
                   <User className="h-5 w-5" />
                 </Button>

@@ -37,7 +37,7 @@ export default function App(){
             </UserRoute>
           }/>
         <Route 
-          path="/customer/account-overview"
+          path="/customer-profile/:tab"
           element = {
             <UserRoute>
               <UserProfile/>
@@ -68,7 +68,7 @@ export default function App(){
 
         {/* Admin Routes */}
         <Route
-          path="/admin/account-overview"
+          path="/admin-profile/:tab"
           element = {
             <AdminRoute>
               <AdminProfile/>
@@ -87,7 +87,7 @@ export default function App(){
           }
         />
        <Route 
-          path="/vendor/account-overview" 
+          path="/vendor-profile/:tab" 
           element={
             <VendorRoute>
                 <VendorProfile/>

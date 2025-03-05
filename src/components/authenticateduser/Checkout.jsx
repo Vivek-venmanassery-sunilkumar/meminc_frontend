@@ -82,7 +82,7 @@ export default function Checkout() {
       setOrderSuccess(true)
       toast.success('Order placed successfully')
       dispatch(clearCart())
-      navigate('/customer')
+      navigate('/customer-profile/orders')
     } catch (err) {
       setError(err.message || "Failed to place order")
     }finally{

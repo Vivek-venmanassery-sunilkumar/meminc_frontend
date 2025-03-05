@@ -36,7 +36,7 @@ const LoginPage = () => {
           const role = response.data.role;
           dispatch(loginSuccessAdmin({ role: role }));
           toast.success("Welcome Admin");
-          navigate("/admin/account-overview");
+          navigate("/admin-profile/dashboard");
         } else if (response.data.role === "customer") {
           const { role, email, first_name, last_name, phone_number, profile_picture } = response.data;
           dispatch(
@@ -70,7 +70,7 @@ const LoginPage = () => {
             })
           );
           toast.success("Login Successful");
-          navigate("/vendor/account-overview");
+          navigate("/vendor-profile/account-overview");
         }
       }
     } catch (error) {
