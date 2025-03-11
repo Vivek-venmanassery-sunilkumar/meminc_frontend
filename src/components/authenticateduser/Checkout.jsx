@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react"
-import { useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent } from "@/components/ui/card"
-import { ShoppingBag, MapPin, CreditCard, Loader2, AlertCircle, CheckCircle } from "lucide-react"
-import api from "@/axios/axiosInstance"
+
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { ShoppingBag, MapPin, CreditCard, Loader2, AlertCircle, CheckCircle, Tag } from "lucide-react";
+import api from "@/axios/axiosInstance";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,54 +18,120 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useDispatch } from "react-redux"
-import { clearCart } from "@/redux/CartSlice"
-import toast from "react-hot-toast"
+} from "@/components/ui/alert-dialog";
+import { useDispatch } from "react-redux";
+import { clearCart } from "@/redux/CartSlice";
+import toast from "react-hot-toast";
 
 export default function Checkout() {
-  const [addresses, setAddresses] = useState([])
-  const [selectedAddress, setSelectedAddress] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
-  const [orderSuccess, setOrderSuccess] = useState(false)
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [coupons, setCoupons] = useState([]);
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [discountedTotal, setDiscountedTotal] = useState(0);
+  const [discount, setDiscount] = useState(0); // New state to track the discount amount
 
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Access the cart state
-  const cart = useSelector((state) => state.cart)
-  const { items, totalPrice } = cart
+  const cart = useSelector((state) => state.cart);
+  const { items, totalPrice } = cart;
 
-  // Fetch customer addresses using the Axios instance
+  useEffect(() => {
+    // Initialize discountedTotal with the original total price
+    setDiscountedTotal(Number(totalPrice) || 0);
+  }, [totalPrice]);
+
+  // Fetch customer addresses and available coupons
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
-        const response = await api.get("customer/addresses/")
-        setAddresses(response.data)
+        const response = await api.get("customer/addresses/");
+        setAddresses(response.data);
         if (response.data.length > 0) {
-          setSelectedAddress(response.data[0].id)
+          setSelectedAddress(response.data[0].id);
         }
       } catch (err) {
-        setError(err.message || "Failed to fetch addresses")
+        setError(err.message || "Failed to fetch addresses");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
+      }
+    };
+
+    const fetchCoupons = async () => {
+      try {
+        // Send the totalPrice to the backend to fetch valid coupons
+        const response = await api.get("customer/coupons/", {
+          params: {
+            total_price: totalPrice, // Send the total price to the backend
+          },
+        });
+        if (response.data && response.data.length > 0) {
+          setCoupons(response.data);
+        } else {
+          console.log("No available coupons");
+        }
+      } catch (err) {
+        console.error("Failed to fetch coupons:", err);
+        toast.error("Failed to fetch coupons");
+      }
+    };
+
+    fetchAddresses();
+    fetchCoupons();
+  }, [totalPrice]); // Fetch coupons whenever totalPrice changes
+
+  // Handle coupon selection
+  const handleCouponChange = (couponId) => {
+    const id = Number(couponId);
+    const coupon = coupons.find((c) => c.id === id);
+    if (!coupon) {
+      setSelectedCoupon(null);
+      setDiscount(0); // Reset discount
+      setDiscountedTotal(Number(totalPrice) || 0); // Reset to original total
+      return;
+    }
+
+    // Check if the order meets the minimum order value for the coupon
+    if (totalPrice < coupon.min_order_value) {
+      toast.error(`This coupon requires a minimum order of ₹${coupon.min_order_value}`);
+      setSelectedCoupon(null);
+      setDiscount(0); // Reset discount
+      setDiscountedTotal(Number(totalPrice) || 0); // Reset to original total
+      return;
+    }
+
+    let calculatedDiscount = 0;
+
+    if (coupon.coupon_type === "flat") {
+      calculatedDiscount = Number(coupon.discount_value); // Flat discount
+    } else if (coupon.coupon_type === "percentage") {
+      calculatedDiscount = (totalPrice * Number(coupon.discount_value)) / 100; // Percentage discount
+      // Ensure the discount does not exceed the max_discount for percentage coupons
+      if (coupon.max_discount && calculatedDiscount > Number(coupon.max_discount)) {
+        calculatedDiscount = Number(coupon.max_discount);
+        toast.success(`Maximum discount of ₹${coupon.max_discount} applied for this coupon.`);
       }
     }
 
-    fetchAddresses()
-  }, [])
+    setSelectedCoupon(coupon);
+    setDiscount(calculatedDiscount); // Set the discount amount
+    setDiscountedTotal(Number(totalPrice) - calculatedDiscount); // Update the total price
+  };
 
   const handlePlaceOrder = () => {
-    setShowConfirmDialog(true)
-  }
+    setShowConfirmDialog(true);
+  };
 
   const confirmOrder = async () => {
-    setIsPlacingOrder(true)
+    setIsPlacingOrder(true);
     try {
-      // Make API call to place the order
       const orderData = {
         address_id: selectedAddress,
         payment_mode: "cash_on_delivery",
@@ -72,23 +139,23 @@ export default function Checkout() {
           variant_id: item.variant_id,
           quantity: item.quantity,
         })),
-        total_price: totalPrice,
-      }
+        total_price: discountedTotal,
+        coupon_id: selectedCoupon ? selectedCoupon.id : null, // Include coupon_id in the order data
+      };
 
-      const response = await api.post("cart/checkout/", orderData)
-      console.log("Order placed:", response.data)
+      const response = await api.post("cart/checkout/", orderData);
+      console.log("Order placed:", response.data);
 
-      // Set order success and show confirmation
-      setOrderSuccess(true)
-      toast.success('Order placed successfully')
-      dispatch(clearCart())
-      navigate('/customer-profile/orders')
+      setOrderSuccess(true);
+      toast.success("Order placed successfully");
+      dispatch(clearCart());
+      navigate("/customer-profile/orders");
     } catch (err) {
-      setError(err.message || "Failed to place order")
-    }finally{
-      setIsPlacingOrder(false)
+      setError(err.message || "Failed to place order");
+    } finally {
+      setIsPlacingOrder(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -96,7 +163,7 @@ export default function Checkout() {
         <Loader2 className="h-8 w-8 text-[#4A5859] animate-spin" />
         <span className="ml-2 text-[#4A5859]">Loading addresses...</span>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -105,7 +172,7 @@ export default function Checkout() {
         <AlertCircle className="h-6 w-6 mr-2" />
         {error}
       </div>
-    )
+    );
   }
 
   return (
@@ -193,6 +260,31 @@ export default function Checkout() {
           </Card>
         </div>
 
+        {/* Coupon Selection */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Tag className="h-5 w-5 text-[#4A5859] mr-2" />
+            <h3 className="text-xl font-semibold text-[#4A5859]">Apply Coupon</h3>
+          </div>
+          <Card className="border-[#4A5859]/10">
+            <CardContent className="p-4">
+              <select
+                className="w-full p-2 border border-[#4A5859]/10 rounded-lg"
+                onChange={(e) => handleCouponChange(e.target.value)}
+              >
+                <option value="">Select a coupon</option>
+                {coupons.map((coupon) => (
+                  <option key={coupon.id} value={coupon.id}>
+                    {coupon.code} - {coupon.coupon_type === "flat"
+                      ? `₹${coupon.discount_value} off`
+                      : `${coupon.discount_value}% off (up to ₹${coupon.max_discount})`}
+                  </option>
+                ))}
+              </select>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Payment Mode Selection */}
         <div className="mb-8">
           <div className="flex items-center mb-4">
@@ -225,6 +317,14 @@ export default function Checkout() {
                 <span className="text-[#4A5859]/70">Subtotal</span>
                 <span className="text-[#4A5859]">₹{totalPrice}</span>
               </div>
+              {selectedCoupon && (
+                <div className="flex justify-between">
+                  <span className="text-[#4A5859]/70">Discount</span>
+                  <span className="text-[#4A5859]">
+                    -₹{discount.toFixed(2)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#4A5859]/70">Shipping</span>
                 <span className="text-[#4A5859]">Free</span>
@@ -232,7 +332,7 @@ export default function Checkout() {
               <Separator className="my-2 bg-[#4A5859]/10" />
               <div className="flex justify-between font-semibold">
                 <span className="text-[#4A5859]">Total</span>
-                <span className="text-[#4A5859]">₹{totalPrice}</span>
+                <span className="text-[#4A5859]">₹{discountedTotal.toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
@@ -254,9 +354,8 @@ export default function Checkout() {
       <AlertDialog
         open={showConfirmDialog}
         onOpenChange={(open) => {
-          // Only allow closing if not in success state
           if (!orderSuccess) {
-            setShowConfirmDialog(open)
+            setShowConfirmDialog(open);
           }
         }}
       >
@@ -297,6 +396,5 @@ export default function Checkout() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
-
