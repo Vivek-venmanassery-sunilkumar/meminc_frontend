@@ -1,76 +1,100 @@
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Edit, Search, Tag, Calendar, DollarSign, Percent, ShoppingBag, Clock, Plus } from "lucide-react"
-import api from "@/axios/axiosInstance"
-import toast from "react-hot-toast"
-import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Edit, Search, Tag, Calendar, DollarSign, Percent, ShoppingBag, Clock, Plus } from "lucide-react";
+import api from "@/axios/axiosInstance";
+import toast from "react-hot-toast";
+import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc";
 
 export default function Coupons() {
-  const [coupons, setCoupons] = useState([])
-  const [filteredCoupons, setFilteredCoupons] = useState([])
-  const [editingCouponId, setEditingCouponId] = useState(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [accordionValue, setAccordionValue] = useState("")
-  const itemsPerPage = 10
-  const today = new Date()
+  const [coupons, setCoupons] = useState([]);
+  const [filteredCoupons, setFilteredCoupons] = useState([]);
+  const [editingCouponId, setEditingCouponId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [accordionValue, setAccordionValue] = useState("");
+  const itemsPerPage = 10;
+  const today = new Date();
 
   useEffect(() => {
-    fetchCoupons()
-  }, [])
+    fetchCoupons();
+  }, []);
 
   useEffect(() => {
-    const filtered = coupons.filter((coupon) => coupon.code.toLowerCase().includes(searchQuery.toLowerCase()))
-    setFilteredCoupons(filtered)
-    setCurrentPage(1)
-  }, [coupons, searchQuery])
+    const filtered = coupons.filter((coupon) =>
+      coupon.code.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredCoupons(filtered);
+    setCurrentPage(1);
+  }, [coupons, searchQuery]);
 
   const fetchCoupons = async () => {
     try {
-      const response = await api.get("/admin/coupons/")
-      setCoupons(response.data)
+      const response = await api.get("/admin/coupons/");
+      setCoupons(response.data);
     } catch (error) {
-      console.error("Error fetching coupons:", error)
+      console.error("Error fetching coupons:", error);
     }
-  }
+  };
 
   const handleToggleEnabled = async (couponId, currentStatus) => {
     try {
+      // Optimistically update the UI
+      setCoupons((prevCoupons) =>
+        prevCoupons.map((coupon) =>
+          coupon.id === couponId
+            ? { ...coupon, is_active_admin: !currentStatus }
+            : coupon
+        )
+      );
+
+      // Send the request to the server
       await api.post(`/admin/coupons/${couponId}/toggle/`, {
         is_active_admin: !currentStatus,
-      })
-      fetchCoupons()
+      });
+
+      // Show success toast
+      toast.success("Coupon status updated successfully!");
     } catch (error) {
+      // Revert the UI change if the request fails
+      setCoupons((prevCoupons) =>
+        prevCoupons.map((coupon) =>
+          coupon.id === couponId
+            ? { ...coupon, is_active_admin: currentStatus }
+            : coupon
+        )
+      );
+
+      // Show error message
       if (error.response && error.response.data) {
-        const errors = extractErrorMessages(error.response.data).join(",")
-        toast.error(errors)
+        const errors = extractErrorMessages(error.response.data).join(",");
+        toast.error(errors);
       }
     }
-  }
+  };
 
   const getCouponStatus = (coupon) => {
-    const expiryDate = new Date(coupon.expiry_date)
-    if (!coupon.is_active && expiryDate < today) return "expired"
-    if (!coupon.is_active && expiryDate >= today) return "yet-to-activate"
-    return "active"
-  }
+    const expiryDate = new Date(coupon.expiry_date);
+    if (!coupon.is_active && expiryDate < today) return "expired";
+    if (!coupon.is_active && expiryDate >= today) return "yet-to-activate";
+    return "active";
+  };
 
   const handleEditClick = (couponId) => {
-    setEditingCouponId(couponId)
-    setAccordionValue("edit-coupon")
-  }
+    setEditingCouponId(couponId);
+    setAccordionValue("edit-coupon");
+  };
 
   // Pagination calculations
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentCoupons = filteredCoupons.slice(indexOfFirstItem, indexOfLastItem)
-  const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage)
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCoupons = filteredCoupons.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
 
   return (
     <Card className="shadow-sm">
@@ -108,14 +132,14 @@ export default function Coupons() {
               <AccordionContent className="px-4 pt-4 pb-6 border-t">
                 <AddCouponForm
                   onCouponAdded={() => {
-                    fetchCoupons()
-                    setEditingCouponId(null)
-                    setAccordionValue("")
+                    fetchCoupons();
+                    setEditingCouponId(null);
+                    setAccordionValue("");
                   }}
                   editingCoupon={coupons.find((c) => c.id === editingCouponId)}
                   onCancel={() => {
-                    setAccordionValue("")
-                    setEditingCouponId(null)
+                    setAccordionValue("");
+                    setEditingCouponId(null);
                   }}
                 />
               </AccordionContent>
@@ -131,7 +155,7 @@ export default function Coupons() {
             </div>
           ) : (
             currentCoupons.map((coupon) => {
-              const status = getCouponStatus(coupon)
+              const status = getCouponStatus(coupon);
               return (
                 <Card key={coupon.id} className="overflow-hidden">
                   <div className="p-5 relative">
@@ -235,7 +259,7 @@ export default function Coupons() {
                     </div>
                   </div>
                 </Card>
-              )
+              );
             })
           )}
         </div>
@@ -266,7 +290,7 @@ export default function Coupons() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
@@ -278,7 +302,7 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
     max_discount: 0,
     start_date: "",
     expiry_date: "",
-  })
+  });
 
   useEffect(() => {
     if (editingCoupon) {
@@ -290,48 +314,54 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
         max_discount: editingCoupon.max_discount,
         start_date: editingCoupon.start_date,
         expiry_date: editingCoupon.expiry_date,
-      })
+      });
     }
-  }, [editingCoupon])
+  }, [editingCoupon]);
 
   const handleDiscountValueChange = (value) => {
-    let newValue = Number(value)
+    let newValue = Number(value);
 
     // If discount type is percentage, clamp the value between 0 and 100
     if (formData.discount_type === "percentage") {
-      newValue = Math.min(100, Math.max(0, newValue))
+      newValue = Math.min(100, Math.max(0, newValue));
     }
 
     setFormData((prev) => ({
       ...prev,
       discount_value: newValue,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Additional validation for percentage discount
     if (formData.discount_type === "percentage" && formData.discount_value > 100) {
-      alert("Percentage discount cannot be greater than 100%")
-      return
+      alert("Percentage discount cannot be greater than 100%");
+      return;
     }
 
     try {
       if (editingCoupon) {
-        await api.put(`/admin/coupons/${editingCoupon.id}/`, formData)
+        const response = await api.put(`/admin/coupons/${editingCoupon.id}/`, formData);  
+        if(response.status === 200){
+          toast.success('Coupon updated successfully')
+        }
       } else {
-        await api.post("/admin/coupons/", formData)
+        const response = await api.post("/admin/coupons/", formData);
+        if(response.status === 201){
+          toast.success('Coupon created successfully')
+        }
       }
-      onCouponAdded()
-      resetForm()
+      onCouponAdded();
+      resetForm();
     } catch (error) {
       if (error.response && error.response.data) {
-        const errors = extractErrorMessages(error.response.data).join(",")
-        toast.error(errors)
+        const errors = extractErrorMessages(error.response.data).join(",");
+        toast.error(errors);
       }
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -342,10 +372,10 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
       max_discount: 0,
       start_date: "",
       expiry_date: "",
-    })
-  }
+    });
+  };
 
-  const today = new Date().toISOString().split("T")[0]
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
@@ -440,8 +470,8 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
           type="button"
           variant="outline"
           onClick={() => {
-            resetForm()
-            onCancel()
+            resetForm();
+            onCancel();
           }}
         >
           Cancel
@@ -449,6 +479,5 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
         <Button type="submit">{editingCoupon ? "Update Coupon" : "Add Coupon"}</Button>
       </div>
     </form>
-  )
+  );
 }
-
