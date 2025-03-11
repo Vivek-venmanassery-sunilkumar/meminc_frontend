@@ -15,7 +15,7 @@ export default function LoggedInAdminHeader() {
           <Button variant="ghost" className="text-white">
             <Bell className="h-5 w-5" />
           </Button>
-          <Link to={'/admin/account-overview'}>
+          <Link to={'/admin-profile/dashboard'}>
           <Button variant="ghost" className="text-white">
                   <User className="h-5 w-5" />
           </Button>

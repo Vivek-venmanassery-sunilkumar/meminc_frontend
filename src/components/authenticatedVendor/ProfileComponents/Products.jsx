@@ -736,3 +736,4 @@ export default function Products() {
     </Card>
   );
 }
+
