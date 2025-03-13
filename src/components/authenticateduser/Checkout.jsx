@@ -22,6 +22,7 @@ import {
 import { useDispatch } from "react-redux";
 import { clearCart } from "@/redux/CartSlice";
 import toast from "react-hot-toast";
+import extractErrorMessages from "../commoncomponents/errorHandlefunc";
 
 export default function Checkout() {
   const [addresses, setAddresses] = useState([]);
@@ -34,7 +35,8 @@ export default function Checkout() {
   const [coupons, setCoupons] = useState([]);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [discountedTotal, setDiscountedTotal] = useState(0);
-  const [discount, setDiscount] = useState(0); // New state to track the discount amount
+  const [discount, setDiscount] = useState(0);
+  const [paymentMode, setPaymentMode] = useState("cash_on_delivery"); // Track payment mode
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -44,10 +46,30 @@ export default function Checkout() {
   const { items, totalPrice } = cart;
 
   useEffect(() => {
-    // Initialize discountedTotal with the original total price
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => {
+      console.log("Razorpay SDK loaded successfully");
+    };
+    script.onerror = () => {
+      console.error("Failed to load Razorpay SDK");
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+  useEffect(() => {
     setDiscountedTotal(Number(totalPrice) || 0);
   }, [totalPrice]);
 
+  useEffect(()=>{
+    if(Number(totalPrice)===0){
+      navigate('/customer')
+    }
+  }, [])
   // Fetch customer addresses and available coupons
   useEffect(() => {
     const fetchAddresses = async () => {
@@ -66,10 +88,9 @@ export default function Checkout() {
 
     const fetchCoupons = async () => {
       try {
-        // Send the totalPrice to the backend to fetch valid coupons
         const response = await api.get("customer/coupons/", {
           params: {
-            total_price: totalPrice, // Send the total price to the backend
+            total_price: totalPrice,
           },
         });
         if (response.data && response.data.length > 0) {
@@ -85,7 +106,7 @@ export default function Checkout() {
 
     fetchAddresses();
     fetchCoupons();
-  }, [totalPrice]); // Fetch coupons whenever totalPrice changes
+  }, [totalPrice]);
 
   // Handle coupon selection
   const handleCouponChange = (couponId) => {
@@ -93,27 +114,25 @@ export default function Checkout() {
     const coupon = coupons.find((c) => c.id === id);
     if (!coupon) {
       setSelectedCoupon(null);
-      setDiscount(0); // Reset discount
-      setDiscountedTotal(Number(totalPrice) || 0); // Reset to original total
+      setDiscount(0);
+      setDiscountedTotal(Number(totalPrice) || 0);
       return;
     }
 
-    // Check if the order meets the minimum order value for the coupon
     if (totalPrice < coupon.min_order_value) {
       toast.error(`This coupon requires a minimum order of ₹${coupon.min_order_value}`);
       setSelectedCoupon(null);
-      setDiscount(0); // Reset discount
-      setDiscountedTotal(Number(totalPrice) || 0); // Reset to original total
+      setDiscount(0);
+      setDiscountedTotal(Number(totalPrice) || 0);
       return;
     }
 
     let calculatedDiscount = 0;
 
     if (coupon.coupon_type === "flat") {
-      calculatedDiscount = Number(coupon.discount_value); // Flat discount
+      calculatedDiscount = Number(coupon.discount_value);
     } else if (coupon.coupon_type === "percentage") {
-      calculatedDiscount = (totalPrice * Number(coupon.discount_value)) / 100; // Percentage discount
-      // Ensure the discount does not exceed the max_discount for percentage coupons
+      calculatedDiscount = (totalPrice * Number(coupon.discount_value)) / 100;
       if (coupon.max_discount && calculatedDiscount > Number(coupon.max_discount)) {
         calculatedDiscount = Number(coupon.max_discount);
         toast.success(`Maximum discount of ₹${coupon.max_discount} applied for this coupon.`);
@@ -121,14 +140,104 @@ export default function Checkout() {
     }
 
     setSelectedCoupon(coupon);
-    setDiscount(calculatedDiscount); // Set the discount amount
-    setDiscountedTotal(Number(totalPrice) - calculatedDiscount); // Update the total price
+    setDiscount(calculatedDiscount);
+    setDiscountedTotal(Number(totalPrice) - calculatedDiscount);
   };
 
+  const handleRazorpayPayment = async () => {
+  try {
+    const orderData = {
+      address_id: selectedAddress,
+      payment_mode: "card",
+      items: items.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+      })),
+      total_price: discountedTotal,
+      coupon_id: selectedCoupon ? selectedCoupon.id : null,
+    };
+
+    const response = await api.post("cart/checkout/", orderData);
+    const { razorpay_order_id, amount, currency, key } = response.data;
+
+    const options = {
+      key: key,
+      amount: amount,
+      currency: currency,
+      order_id: razorpay_order_id,
+      handler: async function (response) {
+        try {
+          const result = await api.post("cart/razorpay-callback/", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+
+          if (result.data.success) {
+            toast.success("Payment successful! Order placed.");
+            dispatch(clearCart());
+            navigate("/customer-profile/orders");
+          } else {
+            toast.error("Payment failed. Please try again.");
+            navigate("/customer-profile/orders/");
+          }
+        } catch (err) {
+          console.error("Error verifying payment:", err);
+          toast.error("Payment verification failed. Please contact support.");
+          navigate("/customer-profile/orders/");
+        }
+      },
+      prefill: {
+        name: "Customer Name",
+        email: "customer@example.com",
+        contact: "9999999999",
+      },
+      theme: {
+        color: "#4A5859",
+      },
+      modal: {
+      ondismiss: function () {
+        console.log("Razorpay popup closed by user");
+        dispatch(clearCart())
+        navigate("/customer-profile/orders"); // Navigate when the popup is closed
+      },
+    }}
+ if (!window.Razorpay) {
+      console.error("Razorpay SDK not loaded");
+      toast.error("Payment gateway is not available. Please try again later.");
+      return;
+    }
+
+    const rzp = new window.Razorpay(options);
+    rzp.open()
+    } catch (err) {
+      console.error("Error processing Razorpay payment:", err);
+      if (err.response && err.response.data) {
+        const errorMessage = extractErrorMessages(err.response.data).join(",");
+        toast.error(errorMessage);
+      } else {
+        toast.error("Failed to process payment. Please try again.");
+      }
+      navigate("/customer-profile/orders/");
+    }
+    };
+
+
+  // Handle place order
   const handlePlaceOrder = () => {
-    setShowConfirmDialog(true);
+    if (!selectedAddress) {
+      toast.error("Please select a shipping address");
+      return;
+    }
+
+    if (paymentMode === "card") {
+      handleRazorpayPayment();
+    } else {
+      setShowConfirmDialog(true);
+    }
   };
 
+  // Confirm order for Cash on Delivery
   const confirmOrder = async () => {
     setIsPlacingOrder(true);
     try {
@@ -140,7 +249,7 @@ export default function Checkout() {
           quantity: item.quantity,
         })),
         total_price: discountedTotal,
-        coupon_id: selectedCoupon ? selectedCoupon.id : null, // Include coupon_id in the order data
+        coupon_id: selectedCoupon ? selectedCoupon.id : null,
       };
 
       const response = await api.post("cart/checkout/", orderData);
@@ -148,8 +257,8 @@ export default function Checkout() {
 
       setOrderSuccess(true);
       toast.success("Order placed successfully");
-      dispatch(clearCart());
       navigate("/customer-profile/orders");
+      dispatch(clearCart());
     } catch (err) {
       setError(err.message || "Failed to place order");
     } finally {
@@ -293,14 +402,32 @@ export default function Checkout() {
           </div>
           <Card className="border-[#4A5859]/10">
             <CardContent className="p-4">
-              <RadioGroup value="cash_on_delivery" onValueChange={() => {}}>
-                <div className="border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 cursor-pointer">
-                  <div className="flex items-center">
-                    <RadioGroupItem value="cash_on_delivery" id="cash_on_delivery" />
-                    <Label htmlFor="cash_on_delivery" className="ml-2 cursor-pointer">
-                      <div className="text-[#4A5859] font-medium">Cash on Delivery</div>
-                      <div className="text-[#4A5859]/70 text-sm mt-1">Pay when you receive your order</div>
-                    </Label>
+              <RadioGroup value={paymentMode} onValueChange={setPaymentMode}>
+                <div className="space-y-4">
+                  {/* Cash on Delivery Option */}
+                  <div className="border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 cursor-pointer">
+                    <div className="flex items-center">
+                      <RadioGroupItem value="cash_on_delivery" id="cash_on_delivery" />
+                      <Label htmlFor="cash_on_delivery" className="ml-2 cursor-pointer">
+                        <div className="text-[#4A5859] font-medium">Cash on Delivery</div>
+                        <div className="text-[#4A5859]/70 text-sm mt-1">
+                          Pay when you receive your order
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+
+                  {/* Card Payment Option */}
+                  <div className="border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 cursor-pointer">
+                    <div className="flex items-center">
+                      <RadioGroupItem value="card" id="card" />
+                      <Label htmlFor="card" className="ml-2 cursor-pointer">
+                        <div className="text-[#4A5859] font-medium">Card Payment</div>
+                        <div className="text-[#4A5859]/70 text-sm mt-1">
+                          Pay securely with your card
+                        </div>
+                      </Label>
+                    </div>
                   </div>
                 </div>
               </RadioGroup>
