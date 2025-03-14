@@ -43,7 +43,6 @@ export default function MyOrders() {
     };
   }, []);
 
-
   useEffect(() => {
     const fetchOrders = async () => {
       try {

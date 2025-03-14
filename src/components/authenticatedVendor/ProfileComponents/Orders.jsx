@@ -1,117 +1,7 @@
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { useEffect, useState } from "react";
-// import api from "@/axios/axiosInstance"; 
-// import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc";
-// import toast from "react-hot-toast";
 
-// export default function Orders() {
-//   const [orders, setOrders] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchOrders = async () => {
-//       try {
-//         const response = await api.get("/vendor/orders/");
-//         console.log("API Response:", response.data); // Debugging: Log the API response
-//         // Ensure the response data is an array
-//         if (Array.isArray(response.data)) {
-//           setOrders(response.data);
-//         } else {
-//           console.error("Expected an array but got:", response.data);
-//           setOrders([]); // Fallback to an empty array
-//         }
-//       } catch (err) {
-//         setError(err.message);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchOrders();
-//   }, []);
-
-//   const handleStatusChange = async (orderItemId, newStatus) => {
-//     try {
-//       // Assuming you have an endpoint to update the order status
-//       await api.patch(`/vendor/order-status-update/${orderItemId}/`, { status: newStatus });
-//       setOrders(
-//         orders.map((order) =>
-//           order.order_item_id === orderItemId ? { ...order, status: newStatus } : order
-//         )
-//       );
-//     } catch (err) {
-//       if(err.response && err.response.data){
-//         const errorMessage = extractErrorMessages(err.response.data).join(',')
-//         toast.error(errorMessage)
-//       }
-//     }
-//   };
-
-//   if (loading) return <div>Loading...</div>;
-//   if (error) return <div>Error: {error}</div>;
-
-//   return (
-//     <Card>
-//       <CardHeader>
-//         <CardTitle>Orders</CardTitle>
-//       </CardHeader>
-//       <CardContent>
-//         {orders.length > 0 ? (
-//           orders.map((order) => (
-//             <div key={order.order_item_id} className="mb-4 p-4 border rounded-md">
-//               <div className="flex items-center space-x-4">
-//                 {order.image_url && (
-//                   <img
-//                     src={order.image_url}
-//                     alt={order.product}
-//                     className="w-16 h-16 object-cover rounded-md"
-//                   />
-//                 )}
-//                 <div>
-//                   <p>Order Item ID: #{order.order_item_id}</p>
-//                   <p>Quantity: {order.quantity}</p>
-//                   <p>Price: ${order.price}</p>
-//                   <p>Ordered on: {order.created_at}</p>
-//                 </div>
-//               </div>
-//               <div className="mt-4">
-//                 <p>Shipping Address:</p>
-//                 <p>{order.shipping_address.name}</p>
-//                 <p>{order.shipping_address.street_address}</p>
-//                 <p>
-//                   {order.shipping_address.city}, {order.shipping_address.state}{" "}
-//                   {order.shipping_address.pincode}
-//                 </p>
-//                 <p>{order.shipping_address.country}</p>
-//                 <p>Phone: {order.shipping_address.phone_number}</p>
-//               </div>
-//               <div className="flex items-center space-x-2 mt-4">
-//                 <p>Status:</p>
-//                 <select
-//                   value={order.status}
-//                   onChange={(e) => handleStatusChange(order.order_item_id, e.target.value)}
-//                 >
-//                   <option value="processing">Processing</option>
-//                   <option value="dispatched">Dispatched</option>
-//                   <option value="cancelled">Cancelled</option>
-//                 </select>
-//               </div>
-//             </div>
-//           ))
-//         ) : (
-//           <p>No orders found.</p>
-//         )}
-//       </CardContent>
-//     </Card>
-//   );
-// }
-
-
-
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -119,9 +9,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Pagination,
   PaginationContent,
@@ -129,7 +19,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -139,61 +29,61 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Loader2 } from "lucide-react"
-import api from "@/axios/axiosInstance"
-import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc"
-import toast from "react-hot-toast"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+import api from "@/axios/axiosInstance";
+import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc";
+import toast from "react-hot-toast";
 
 export default function Orders() {
-  const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const ordersPerPage = 3
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 3;
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     orderItemId: null,
     newStatus: "",
-  })
+  });
 
   // Cancellation reason dialog state
   const [cancelDialog, setCancelDialog] = useState({
     isOpen: false,
     orderItemId: null,
     reason: "",
-  })
+  });
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await api.get("/vendor/orders/")
+        const response = await api.get("/vendor/orders/");
         if (Array.isArray(response.data)) {
-          setOrders(response.data)
+          setOrders(response.data);
         } else {
-          console.error("Expected an array but got:", response.data)
-          setOrders([])
+          console.error("Expected an array but got:", response.data);
+          setOrders([]);
         }
       } catch (err) {
-        setError(err.message)
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOrders()
-  }, [])
+    fetchOrders();
+  }, []);
 
   // Get current orders for pagination
-  const indexOfLastOrder = currentPage * ordersPerPage
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
-  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder)
-  const totalPages = Math.ceil(orders.length / ordersPerPage)
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
 
   const handleStatusChangeClick = (orderItemId, newStatus) => {
     if (newStatus === "cancelled") {
@@ -201,24 +91,24 @@ export default function Orders() {
         isOpen: true,
         orderItemId,
         reason: "",
-      })
+      });
     } else {
       setConfirmDialog({
         isOpen: true,
         orderItemId,
         newStatus,
-      })
+      });
     }
-  }
+  };
 
   const handleStatusChange = async (orderItemId, newStatus, reason = null) => {
     try {
-      const payload = { status: newStatus }
+      const payload = { status: newStatus };
       if (reason) {
-        payload.cancellation_reason = reason
+        payload.cancellation_reason = reason;
       }
 
-      await api.patch(`/vendor/order-status-update/${orderItemId}/`, payload)
+      await api.patch(`/vendor/order-status-update/${orderItemId}/`, payload);
 
       setOrders(
         orders.map((order) =>
@@ -226,53 +116,53 @@ export default function Orders() {
             ? { ...order, status: newStatus, cancellation_reason: reason || order.cancellation_reason }
             : order,
         ),
-      )
+      );
 
-      toast.success(`Order status updated to ${newStatus}`)
+      toast.success(`Order status updated to ${newStatus}`);
     } catch (err) {
       if (err.response && err.response.data) {
-        const errorMessage = extractErrorMessages(err.response.data).join(", ")
-        toast.error(errorMessage)
+        const errorMessage = extractErrorMessages(err.response.data).join(", ");
+        toast.error(errorMessage);
       } else {
-        toast.error("Failed to update order status")
+        toast.error("Failed to update order status");
       }
     }
-  }
+  };
 
   const confirmStatusChange = () => {
-    handleStatusChange(confirmDialog.orderItemId, confirmDialog.newStatus)
-    setConfirmDialog({ isOpen: false, orderItemId: null, newStatus: "" })
-  }
+    handleStatusChange(confirmDialog.orderItemId, confirmDialog.newStatus);
+    setConfirmDialog({ isOpen: false, orderItemId: null, newStatus: "" });
+  };
 
   const submitCancellation = () => {
     if (!cancelDialog.reason.trim()) {
-      toast.error("Please provide a reason for cancellation")
-      return
+      toast.error("Please provide a reason for cancellation");
+      return;
     }
 
-    handleStatusChange(cancelDialog.orderItemId, "cancelled", cancelDialog.reason)
-    setCancelDialog({ isOpen: false, orderItemId: null, reason: "" })
-  }
+    handleStatusChange(cancelDialog.orderItemId, "cancelled", cancelDialog.reason);
+    setCancelDialog({ isOpen: false, orderItemId: null, reason: "" });
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
       case "processing":
-        return <Badge className="bg-blue-500">Processing</Badge>
+        return <Badge className="bg-blue-500">Processing</Badge>;
       case "dispatched":
-        return <Badge className="bg-green-500">Dispatched</Badge>
+        return <Badge className="bg-green-500">Dispatched</Badge>;
       case "cancelled":
-        return <Badge className="bg-red-500">Cancelled</Badge>
+        return <Badge className="bg-red-500">Cancelled</Badge>;
       default:
-        return <Badge className="bg-gray-500">{status}</Badge>
+        return <Badge className="bg-gray-500">{status}</Badge>;
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-[#4A5859]" />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -282,7 +172,7 @@ export default function Orders() {
           <div className="text-red-500">Error: {error}</div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -322,7 +212,7 @@ export default function Orders() {
                         <p className="text-sm font-medium text-[#4A5859]">Order Details</p>
                         <div className="text-sm">
                           <p>Quantity: {order.quantity}</p>
-                          <p>Price: ${order.price}</p>
+                          <p>Price: ₹{order.price}</p>
                           <p>Ordered on: {new Date(order.created_at).toLocaleDateString()}</p>
                           {order.cancellation_reason && (
                             <div className="mt-2">
@@ -459,6 +349,5 @@ export default function Orders() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-

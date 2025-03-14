@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Edit, Search, Tag, Calendar, DollarSign, Percent, ShoppingBag, Clock, Plus } from "lucide-react";
+import { Edit, Search, Tag, Calendar, Percent, ShoppingBag, Clock, Plus } from "lucide-react";
 import api from "@/axios/axiosInstance";
 import toast from "react-hot-toast";
 import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc";
@@ -195,26 +195,26 @@ export default function Coupons() {
                           {coupon.discount_type === "percentage" ? (
                             <Percent className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">₹</span>
                           )}
                           <span className="text-muted-foreground">Discount:</span>
                           <span className="font-medium">
                             {coupon.discount_value}
-                            {coupon.discount_type === "percentage" ? "%" : "$"}
+                            {coupon.discount_type === "percentage" ? "%" : ""}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm">
                           <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                           <span className="text-muted-foreground">Min Order:</span>
-                          <span className="font-medium">${coupon.min_order_value}</span>
+                          <span className="font-medium">₹{coupon.min_order_value}</span>
                         </div>
 
                         {coupon.discount_type === "percentage" && (
                           <div className="flex items-center gap-2 text-sm">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">₹</span>
                             <span className="text-muted-foreground">Max Discount:</span>
-                            <span className="font-medium">${coupon.max_discount}</span>
+                            <span className="font-medium">₹{coupon.max_discount}</span>
                           </div>
                         )}
                       </div>
@@ -397,14 +397,14 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
             onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
             className="w-full h-10 px-3 py-2 border rounded-md bg-background"
           >
-            <option value="flat">Flat Amount ($)</option>
+            <option value="flat">Flat Amount (₹)</option>
             <option value="percentage">Percentage (%)</option>
           </select>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">
-            Discount Value {formData.discount_type === "percentage" ? "(%)" : "($)"}
+            Discount Value {formData.discount_type === "percentage" ? "(%)" : "(₹)"}
           </label>
           <Input
             type="number"
@@ -419,7 +419,7 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Minimum Order Value ($)</label>
+          <label className="text-sm font-medium">Minimum Order Value (₹)</label>
           <Input
             type="number"
             value={formData.min_order_value}
@@ -429,7 +429,7 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Maximum Discount ($)</label>
+          <label className="text-sm font-medium">Maximum Discount (₹)</label>
           <Input
             type="number"
             value={formData.max_discount}
