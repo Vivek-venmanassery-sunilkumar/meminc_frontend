@@ -49,7 +49,10 @@ export default function LoggedInUserHeader() {
     <header className="bg-[#4A5859] py-2 font-gentium fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 flex flex-col lg:flex-row">
         <div className="w-full lg:w-1/5 flex items-center justify-between lg:justify-start mb-4 lg:mb-0">
+        <Link to='/customer'>
           <Logo />
+        </Link>
+        
           {isMobile && (
             <Button variant="ghost" onClick={toggleMobileMenu} className="text-white lg:hidden">
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
