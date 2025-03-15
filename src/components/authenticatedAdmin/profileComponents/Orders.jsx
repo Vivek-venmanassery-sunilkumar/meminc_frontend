@@ -227,7 +227,7 @@ export default function Orders() {
                         <div className="text-sm">
                           <p>Quantity: {order.quantity}</p>
                           <p>Price: ₹{order.price}</p>
-                          <p>Payment Status: {getPaymentStatusBadge(order.payment_status)}</p>
+                          <div>Payment Status: {getPaymentStatusBadge(order.payment_status)}</div>
                           <p>Ordered on: {new Date(order.created_at).toLocaleDateString()}</p>
                           {order.cancellation_reason && (
                             <div className="mt-2">
@@ -253,7 +253,7 @@ export default function Orders() {
                       </div>
                     </div>
 
-                    {order.status === "dispatched" && (
+                    {order.status === "Dispatched" && (
                       <div className="pt-3 border-t mt-3">
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-medium">Update Status:</span>
