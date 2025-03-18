@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -279,51 +277,55 @@ export default function Checkout() {
     }
   };
 
-  // Handle place order
-  const handlePlaceOrder = () => {
-    if (!selectedAddress) {
-      toast.error("Please select a shipping address");
-      return;
-    }
+// Handle place order
+const handlePlaceOrder = () => {
+  if (!selectedAddress) {
+    toast.error("Please select a shipping address");
+    return;
+  }
 
-    if (paymentMode === "card") {
-      handleRazorpayPayment();
-    } else if (paymentMode === "wallet") {
-      handleWalletPayment();
-    } else {
-      setShowConfirmDialog(true);
-    }
-  };
+  // For Cash on Delivery, show the confirmation dialog
+  if (paymentMode === "cash_on_delivery") {
+    setShowConfirmDialog(true); // Show the confirmation dialog
+  } else if (paymentMode === "card") {
+    setIsPlacingOrder(true); // Disable the button and show loading spinner for card payment
+    handleRazorpayPayment();
+  } else if (paymentMode === "wallet") {
+    setIsPlacingOrder(true); // Disable the button and show loading spinner for wallet payment
+    handleWalletPayment();
+  }
+};
 
-  // Confirm order for Cash on Delivery
-  const confirmOrder = async () => {
-    setIsPlacingOrder(true);
-    try {
-      const orderData = {
-        address_id: selectedAddress,
-        payment_mode: "cash_on_delivery",
-        items: items.map((item) => ({
-          variant_id: item.variant_id,
-          quantity: item.quantity,
-        })),
-        total_price: discountedTotal,
-        coupon_id: selectedCoupon ? selectedCoupon.id : null,
-      };
+// Confirm order for Cash on Delivery
+const confirmOrder = async () => {
+  setIsPlacingOrder(true); // Disable the confirmation button and show loading spinner
+  try {
+    const orderData = {
+      address_id: selectedAddress,
+      payment_mode: "cash_on_delivery",
+      items: items.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+      })),
+      total_price: discountedTotal,
+      coupon_id: selectedCoupon ? selectedCoupon.id : null,
+    };
 
-      const response = await api.post("cart/checkout/", orderData);
-      console.log("Order placed:", response.data);
+    const response = await api.post("cart/checkout/", orderData);
+    console.log("Order placed:", response.data);
 
-      setOrderSuccess(true);
-      toast.success("Order placed successfully");
-      navigate("/customer-profile/orders");
-      dispatch(clearCart());
-    } catch (err) {
-      setError(err.message || "Failed to place order");
-    } finally {
-      setIsPlacingOrder(false);
-    }
-  };
-
+    setOrderSuccess(true);
+    toast.success("Order placed successfully");
+    navigate("/customer-profile/orders");
+    dispatch(clearCart());
+  } catch (err) {
+    setError(err.message || "Failed to place order");
+    toast.error("Failed to place order. Please try again.");
+  } finally {
+    setIsPlacingOrder(false); // Re-enable the confirmation button
+    setShowConfirmDialog(false); // Close the dialog
+  }
+};
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -551,57 +553,65 @@ export default function Checkout() {
             onClick={handlePlaceOrder}
             className="bg-[#4A5859] hover:bg-[#3A4849] text-white font-bold py-6 px-8 rounded-lg w-full md:w-auto transition-colors"
             size="lg"
+            disabled={isPlacingOrder} // Disable the button when order is being placed
           >
-            Place Order
+            {isPlacingOrder ? ( // Show loading spinner if order is being placed
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Placing Order...
+              </>
+            ) : (
+              "Place Order"
+            )}
           </Button>
         </div>
       </div>
 
       {/* Order Confirmation Dialog */}
-      <AlertDialog
-        open={showConfirmDialog}
-        onOpenChange={(open) => {
-          if (!orderSuccess) {
-            setShowConfirmDialog(open);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{orderSuccess ? "Order Placed Successfully!" : "Confirm Your Order"}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {orderSuccess ? (
-                <div className="flex flex-col items-center justify-center py-4">
-                  <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
-                  <div>Your order has been placed successfully!</div>
-                  <div className="text-sm text-muted-foreground mt-1">Redirecting to your orders...</div>
-                </div>
-              ) : (
-                "Are you sure you want to place this order? This action cannot be undone."
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {!orderSuccess && (
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isPlacingOrder}>No, Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmOrder}
-                disabled={isPlacingOrder}
-                className="bg-[#4A5859] hover:bg-[#3A4849]"
-              >
-                {isPlacingOrder ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Yes, Place Order"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
+  <AlertDialog
+    open={showConfirmDialog}
+    onOpenChange={(open) => {
+      if (!orderSuccess) {
+        setShowConfirmDialog(open);
+      }
+    }}
+  >
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>{orderSuccess ? "Order Placed Successfully!" : "Confirm Your Order"}</AlertDialogTitle>
+      <AlertDialogDescription>
+        {orderSuccess ? (
+          <div className="flex flex-col items-center justify-center py-4">
+            <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
+            <div>Your order has been placed successfully!</div>
+            <div className="text-sm text-muted-foreground mt-1">Redirecting to your orders...</div>
+          </div>
+        ) : (
+          "Are you sure you want to place this order? This action cannot be undone."
+        )}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    {!orderSuccess && (
+      <AlertDialogFooter>
+        <AlertDialogCancel disabled={isPlacingOrder}>No, Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          onClick={confirmOrder}
+          disabled={isPlacingOrder} // Disable only during API call
+          className="bg-[#4A5859] hover:bg-[#3A4849]"
+        >
+          {isPlacingOrder ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Yes, Place Order"
           )}
-        </AlertDialogContent>
-      </AlertDialog>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    )}
+  </AlertDialogContent>
+</AlertDialog>
     </div>
   );
 }
