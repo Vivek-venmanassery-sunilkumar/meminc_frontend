@@ -15,6 +15,15 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { toast } from "react-hot-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -24,6 +33,14 @@ export default function MyOrders() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 3;
+
+  // Cancellation dialog state
+  const [cancelDialog, setCancelDialog] = useState({
+    isOpen: false,
+    orderId: null,
+    item: null,
+    reason: "",
+  });
 
   // Load Razorpay SDK
   useEffect(() => {
@@ -77,14 +94,19 @@ export default function MyOrders() {
   };
 
   // Handle cancellation of an order item
-  const handleCancelItem = async (orderId, item) => {
-    if (!window.confirm(`Are you sure you want to cancel ${item.name}?`)) {
+  const handleCancelItem = async () => {
+    const { orderId, item, reason } = cancelDialog;
+
+    if (!reason.trim()) {
+      toast.error("Please provide a reason for cancellation");
       return;
     }
 
     try {
-      // Call the API to cancel the item
-      await api.patch(`/cart/checkout/${orderId}/items/${item.id}/cancel`);
+      // Call the API to cancel the item with the reason
+      await api.patch(`/customer/order/${orderId}/item/${item.id}/cancel/`, {
+        cancellation_reason: reason,
+      });
 
       // Update the local state
       setOrders((prevOrders) =>
@@ -100,11 +122,14 @@ export default function MyOrders() {
         ),
       );
 
+      // Close the dialog
+      setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" });
+
       // Show success feedback
-      alert(`${item.name} has been cancelled successfully.`);
+      toast.success(`${item.name} has been cancelled successfully.`);
     } catch (err) {
       // Show error feedback
-      alert(err.response?.data?.message || "Failed to cancel the item. Please try again.");
+      toast.error(err.response?.data?.message || "Failed to cancel the item. Please try again.");
     }
   };
 
@@ -259,7 +284,14 @@ export default function MyOrders() {
                                 </Badge>
                                 {["processing", "pending"].includes(item.order_item_status?.toLowerCase()) && (
                                   <button
-                                    onClick={() => handleCancelItem(order.order_id, item)}
+                                    onClick={() =>
+                                      setCancelDialog({
+                                        isOpen: true,
+                                        orderId: order.order_id,
+                                        item,
+                                        reason: "",
+                                      })
+                                    }
                                     className="text-sm text-red-600 hover:text-red-700 hover:underline"
                                   >
                                     Cancel
@@ -398,6 +430,36 @@ export default function MyOrders() {
           </div>
         )}
       </CardContent>
+
+      {/* Cancellation Reason Dialog */}
+      <Dialog
+        open={cancelDialog.isOpen}
+        onOpenChange={(isOpen) => !isOpen && setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reason for Cancellation</DialogTitle>
+            <DialogDescription>Please provide a reason for cancelling this order item.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              placeholder="Enter cancellation reason..."
+              value={cancelDialog.reason}
+              onChange={(e) => setCancelDialog({ ...cancelDialog, reason: e.target.value })}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCancelItem}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
