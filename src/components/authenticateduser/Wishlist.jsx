@@ -42,6 +42,7 @@ const Wishlist = () => {
     try {
       await api.delete(`/cart/wishlist/${variantId}/`);
       dispatch(removeWishlistItem(variantId)); // Dispatch action to remove item from wishlist
+      toast.success('Item removed from wishlist')
     } catch (error) {
       if (error && error.response.data) {
         const errorMessage = extractErrorMessages(error.response.data);
