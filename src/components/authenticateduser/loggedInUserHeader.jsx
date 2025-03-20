@@ -7,16 +7,6 @@ import Logo from "../commoncomponents/logo";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
-const categories = [
-  "Eggs",
-  "Fish & Seafood",
-  "Marinades",
-  "Mutton & Lamb",
-  "Pork & other Meats",
-  "Poultry",
-  "Sausage,Bacon & salami",
-];
-
 export default function LoggedInUserHeader() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,6 +16,8 @@ export default function LoggedInUserHeader() {
   // Access the cart state
   const cartItems = useSelector((state) => state.cart.items);
   const cartItemCount = cartItems.length;
+  const wishlistItems = useSelector((state) => state.wishlist.items);
+  const wishlistItemCount = wishlistItems.length;
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,9 +41,9 @@ export default function LoggedInUserHeader() {
     <header className="bg-[#4A5859] py-2 font-gentium fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 flex flex-col lg:flex-row">
         <div className="w-full lg:w-1/5 flex items-center justify-between lg:justify-start mb-4 lg:mb-0">
-        <Link to='/customer'>
-          <Logo />
-        </Link>
+          <Link to='/customer'>
+            <Logo />
+          </Link>
         
           {isMobile && (
             <Button variant="ghost" onClick={toggleMobileMenu} className="text-white lg:hidden">
@@ -79,10 +71,23 @@ export default function LoggedInUserHeader() {
               <Button variant="ghost" className="text-white">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" className="text-white">
+              <Button
+                variant="ghost"
+                className="text-white relative" // Add relative positioning here
+                onClick={() => { navigate('/customer/wishlist') }}
+              >
                 <Heart className="h-5 w-5" />
+                {wishlistItemCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                    {wishlistItemCount}
+                  </span>
+                )}
               </Button>
-              <Button variant="ghost" className="text-white relative" onClick={() => { navigate('/customer/cart') }}>
+              <Button
+                variant="ghost"
+                className="text-white relative" // Add relative positioning here
+                onClick={() => { navigate('/customer/cart') }}
+              >
                 <ShoppingCart className="h-5 w-5" />
                 {cartItemCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
@@ -97,17 +102,6 @@ export default function LoggedInUserHeader() {
               </Link>
             </div>
           </div>
-          <nav>
-            <ul className="flex flex-col lg:flex-row flex-wrap justify-start -mx-2">
-              {categories.map((category, index) => (
-                <li key={index} className="px-2 py-1">
-                  <a href="#" className="text-white hover:text-[#F0EAD6] text-sm whitespace-nowrap">
-                    {category}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
         </div>
       </div>
     </header>

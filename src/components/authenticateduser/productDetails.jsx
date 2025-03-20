@@ -1,24 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Minus, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateCartItem, setCartData } from '../../redux/CartSlice'; // Import setCartData
-import api from "@/axios/axiosInstance"; // Import your Axios instance
+import { updateCartItem, setCartData } from '../../redux/CartSlice';
+import { fetchWishlistStart, fetchWishlistSuccess, fetchWishlistFailure, removeWishlistItem } from '../../redux/wishlistSlice'; // Import wishlist actions
+import api from "@/axios/axiosInstance";
+import toast from "react-hot-toast";
+import extractErrorMessages from "../commoncomponents/errorHandlefunc";
 
 export default function ProductDetails() {
   const dispatch = useDispatch();
   const product = useSelector((state) => state.product);
   const cart = useSelector((state) => state.cart);
+  const wishlist = useSelector((state) => state.wishlist); // Access wishlist data from Redux store
 
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [selectedVariant, setSelectedVariant] = useState(product.variants[0]);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false); // Loading state for wishlist
 
   const cartItem = cart.items.find((item) => item.variant_id === selectedVariant.id);
   const quantityInCart = cartItem ? cartItem.quantity : 0;
+
+  // Check if the selected variant is in the wishlist
+  const isInWishlist = wishlist.items.some((item) => item.variant_id === selectedVariant.id);
+
+  // Fetch wishlist items on component mount
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      dispatch(fetchWishlistStart());
+      try {
+        const response = await api.get("/cart/wishlist/");
+        dispatch(fetchWishlistSuccess(response.data.wishlist_items));
+      } catch (error) {
+        console.error("Failed to fetch wishlist:", error);
+        if (error.response && error.response.data) {
+          const errorMessage = extractErrorMessages(error.response.data);
+          toast.error(errorMessage.join(", "));
+        }
+        dispatch(fetchWishlistFailure(error.message));
+      }
+    };
+
+    fetchWishlist();
+  }, [dispatch]);
 
   const handleImageClick = (image) => {
     setSelectedImage(image);
@@ -32,24 +60,50 @@ export default function ProductDetails() {
     setIsLoading(true);
 
     try {
-      // Use the Axios instance to send the request
       const response = await api.post("/cart/", {
         variant_id: selectedVariant.id,
-        action, // Send the action ("increase" or "decrease")
+        action,
       });
 
       if (response.status === 204) {
-        // Item was removed, fetch the entire cart again
         const cartResponse = await api.get("/cart/");
-        dispatch(setCartData(cartResponse.data)); // Update Redux store with the full cart data
+        dispatch(setCartData(cartResponse.data));
       } else {
-        // Item was updated, update the Redux store with the response data
         dispatch(updateCartItem(response.data));
       }
     } catch (error) {
       console.error("Failed to update cart:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    setIsWishlistLoading(true);
+    try {
+      const response = await api.post("/cart/wishlist/", {
+        variant_id: selectedVariant.id,
+      });
+
+      if (response.status === 200) {
+        // Fetch the updated wishlist after adding/removing the item
+        const wishlistResponse = await api.get("/cart/wishlist/");
+        dispatch(fetchWishlistSuccess(wishlistResponse.data.wishlist_items));
+
+        if (isInWishlist) {
+          toast.success("Removed from wishlist!");
+        } else {
+          toast.success("Added to wishlist!");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update wishlist:", error);
+      if (error.response && error.response.data) {
+        const errorMessage = extractErrorMessages(error.response.data);
+        toast.error(errorMessage.join(", "));
+      }
+    } finally {
+      setIsWishlistLoading(false);
     }
   };
 
@@ -159,8 +213,13 @@ export default function ProductDetails() {
                   </Button>
                 </div>
               )}
-              <Button variant="outline" size="icon">
-                <Heart className="h-5 w-5" />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleWishlistToggle}
+                disabled={isWishlistLoading} // Disable only during API call
+              >
+                <Heart className={cn("h-5 w-5", isInWishlist && "fill-red-500 text-red-500")} />
               </Button>
             </div>
 

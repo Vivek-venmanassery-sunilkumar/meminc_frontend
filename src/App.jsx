@@ -12,6 +12,7 @@ import ProductDetailsPage from "./pages/User/productDetailsPage";
 import ResetPasswordModal from "./components/commoncomponents/ResetPasswordModal";
 import CartPage from "./pages/User/CartPage";
 import CheckoutPage from "./pages/User/CheckoutPage";
+import WishlistPage from "./pages/User/WishlistPage";
 
 
 
@@ -62,6 +63,14 @@ export default function App(){
           element={
             <UserRoute>
               <CheckoutPage/>
+            </UserRoute>
+          }/>
+        
+        <Route
+          path="/customer/wishlist"
+          element = {
+            <UserRoute>
+              <WishlistPage/>
             </UserRoute>
           }/>
 
