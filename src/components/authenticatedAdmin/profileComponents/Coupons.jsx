@@ -321,14 +321,39 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
   const handleDiscountValueChange = (value) => {
     let newValue = Number(value);
 
+    // Ensure the value is not negative
+    newValue = Math.max(0, newValue);
+
     // If discount type is percentage, clamp the value between 0 and 100
     if (formData.discount_type === "percentage") {
-      newValue = Math.min(100, Math.max(0, newValue));
+      newValue = Math.min(100, newValue);
     }
 
     setFormData((prev) => ({
       ...prev,
       discount_value: newValue,
+      // If discount type is flat, set max_discount to the same value
+      max_discount: prev.discount_type === "flat" ? newValue : prev.max_discount,
+    }));
+  };
+
+  const handleMinOrderValueChange = (value) => {
+    let newValue = Number(value);
+    // Ensure the value is not negative
+    newValue = Math.max(0, newValue);
+    setFormData((prev) => ({
+      ...prev,
+      min_order_value: newValue,
+    }));
+  };
+
+  const handleMaxDiscountChange = (value) => {
+    let newValue = Number(value);
+    // Ensure the value is not negative
+    newValue = Math.max(0, newValue);
+    setFormData((prev) => ({
+      ...prev,
+      max_discount: newValue,
     }));
   };
 
@@ -394,7 +419,15 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
           <label className="text-sm font-medium">Discount Type</label>
           <select
             value={formData.discount_type}
-            onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
+            onChange={(e) => {
+              const newDiscountType = e.target.value;
+              setFormData((prev) => ({
+                ...prev,
+                discount_type: newDiscountType,
+                // Reset max_discount if switching to percentage
+                max_discount: newDiscountType === "flat" ? prev.discount_value : 0,
+              }));
+            }}
             className="w-full h-10 px-3 py-2 border rounded-md bg-background"
           >
             <option value="flat">Flat Amount (₹)</option>
@@ -423,7 +456,7 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
           <Input
             type="number"
             value={formData.min_order_value}
-            onChange={(e) => setFormData({ ...formData, min_order_value: Number(e.target.value) })}
+            onChange={(e) => handleMinOrderValueChange(e.target.value)}
             required
           />
         </div>
@@ -433,7 +466,7 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
           <Input
             type="number"
             value={formData.max_discount}
-            onChange={(e) => setFormData({ ...formData, max_discount: Number(e.target.value) })}
+            onChange={(e) => handleMaxDiscountChange(e.target.value)}
             disabled={formData.discount_type === "flat"}
             required
           />
@@ -481,3 +514,191 @@ function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
     </form>
   );
 }
+// function AddCouponForm({ onCouponAdded, editingCoupon, onCancel }) {
+//   const [formData, setFormData] = useState({
+//     code: "",
+//     discount_type: "flat",
+//     discount_value: 0,
+//     min_order_value: 0,
+//     max_discount: 0,
+//     start_date: "",
+//     expiry_date: "",
+//   });
+
+//   useEffect(() => {
+//     if (editingCoupon) {
+//       setFormData({
+//         code: editingCoupon.code,
+//         discount_type: editingCoupon.discount_type,
+//         discount_value: editingCoupon.discount_value,
+//         min_order_value: editingCoupon.min_order_value,
+//         max_discount: editingCoupon.max_discount,
+//         start_date: editingCoupon.start_date,
+//         expiry_date: editingCoupon.expiry_date,
+//       });
+//     }
+//   }, [editingCoupon]);
+
+//   const handleDiscountValueChange = (value) => {
+//     let newValue = Number(value);
+
+//     // If discount type is percentage, clamp the value between 0 and 100
+//     if (formData.discount_type === "percentage") {
+//       newValue = Math.min(100, Math.max(0, newValue));
+//     }
+
+//     setFormData((prev) => ({
+//       ...prev,
+//       discount_value: newValue,
+//     }));
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     // Additional validation for percentage discount
+//     if (formData.discount_type === "percentage" && formData.discount_value > 100) {
+//       alert("Percentage discount cannot be greater than 100%");
+//       return;
+//     }
+
+//     try {
+//       if (editingCoupon) {
+//         const response = await api.put(`/admin/coupons/${editingCoupon.id}/`, formData);  
+//         if(response.status === 200){
+//           toast.success('Coupon updated successfully')
+//         }
+//       } else {
+//         const response = await api.post("/admin/coupons/", formData);
+//         if(response.status === 201){
+//           toast.success('Coupon created successfully')
+//         }
+//       }
+//       onCouponAdded();
+//       resetForm();
+//     } catch (error) {
+//       if (error.response && error.response.data) {
+//         const errors = extractErrorMessages(error.response.data).join(",");
+//         toast.error(errors);
+//       }
+//     }
+//   };
+
+//   const resetForm = () => {
+//     setFormData({
+//       code: "",
+//       discount_type: "flat",
+//       discount_value: 0,
+//       min_order_value: 0,
+//       max_discount: 0,
+//       start_date: "",
+//       expiry_date: "",
+//     });
+//   };
+
+//   const today = new Date().toISOString().split("T")[0];
+
+//   return (
+//     <form className="space-y-6" onSubmit={handleSubmit}>
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Coupon Code</label>
+//           <Input
+//             value={formData.code}
+//             onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+//             placeholder="e.g. SUMMER2023"
+//             required
+//           />
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Discount Type</label>
+//           <select
+//             value={formData.discount_type}
+//             onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
+//             className="w-full h-10 px-3 py-2 border rounded-md bg-background"
+//           >
+//             <option value="flat">Flat Amount (₹)</option>
+//             <option value="percentage">Percentage (%)</option>
+//           </select>
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">
+//             Discount Value {formData.discount_type === "percentage" ? "(%)" : "(₹)"}
+//           </label>
+//           <Input
+//             type="number"
+//             value={formData.discount_value}
+//             onChange={(e) => handleDiscountValueChange(e.target.value)}
+//             max={formData.discount_type === "percentage" ? 100 : undefined}
+//             required
+//           />
+//           {formData.discount_type === "percentage" && (
+//             <p className="text-xs text-muted-foreground mt-1">Percentage must be between 0 and 100</p>
+//           )}
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Minimum Order Value (₹)</label>
+//           <Input
+//             type="number"
+//             value={formData.min_order_value}
+//             onChange={(e) => setFormData({ ...formData, min_order_value: Number(e.target.value) })}
+//             required
+//           />
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Maximum Discount (₹)</label>
+//           <Input
+//             type="number"
+//             value={formData.max_discount}
+//             onChange={(e) => setFormData({ ...formData, max_discount: Number(e.target.value) })}
+//             disabled={formData.discount_type === "flat"}
+//             required
+//           />
+//           {formData.discount_type === "percentage" && (
+//             <p className="text-xs text-muted-foreground mt-1">Maximum amount that can be discounted</p>
+//           )}
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Start Date</label>
+//           <Input
+//             type="date"
+//             value={formData.start_date}
+//             min={today}
+//             onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+//             required
+//           />
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="text-sm font-medium">Expiry Date</label>
+//           <Input
+//             type="date"
+//             value={formData.expiry_date}
+//             min={formData.start_date || today}
+//             onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+//             required
+//           />
+//         </div>
+//       </div>
+
+//       <div className="flex gap-3 justify-end pt-2">
+//         <Button
+//           type="button"
+//           variant="outline"
+//           onClick={() => {
+//             resetForm();
+//             onCancel();
+//           }}
+//         >
+//           Cancel
+//         </Button>
+//         <Button type="submit">{editingCoupon ? "Update Coupon" : "Add Coupon"}</Button>
+//       </div>
+//     </form>
+//   );
+// }

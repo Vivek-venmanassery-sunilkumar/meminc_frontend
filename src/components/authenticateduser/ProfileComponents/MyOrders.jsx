@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import api from "@/axios/axiosInstance";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Package, CreditCard, MapPin, ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react"
+import api from "@/axios/axiosInstance"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Package, CreditCard, MapPin, ShoppingBag } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Pagination,
   PaginationContent,
@@ -13,8 +13,8 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
-import { toast } from "react-hot-toast";
+} from "@/components/ui/pagination"
+import { toast } from "react-hot-toast"
 import {
   Dialog,
   DialogContent,
@@ -22,17 +22,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function MyOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 3;
+  const [currentPage, setCurrentPage] = useState(1)
+  const ordersPerPage = 1 // Changed to 1 order per page
 
   // Cancellation dialog state
   const [cancelDialog, setCancelDialog] = useState({
@@ -40,73 +40,73 @@ export default function MyOrders() {
     orderId: null,
     item: null,
     reason: "",
-  });
+  })
 
   // Load Razorpay SDK
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
+    const script = document.createElement("script")
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.async = true
     script.onload = () => {
-      console.log("Razorpay SDK loaded successfully");
-    };
+      console.log("Razorpay SDK loaded successfully")
+    }
     script.onerror = () => {
-      console.error("Failed to load Razorpay SDK");
-    };
-    document.body.appendChild(script);
+      console.error("Failed to load Razorpay SDK")
+    }
+    document.body.appendChild(script)
 
     return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+      document.body.removeChild(script)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await api.get("/cart/checkout/");
-        const data = Array.isArray(response.data) ? response.data : [response.data];
-        setOrders(data);
-        setError(null);
+        const response = await api.get("/cart/checkout/")
+        const data = Array.isArray(response.data) ? response.data : [response.data]
+        setOrders(data)
+        setError(null)
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to fetch orders");
+        setError(err.response?.data?.message || "Failed to fetch orders")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchOrders();
-  }, []);
+    fetchOrders()
+  }, [])
 
   // Helper function for item status colors
   const getItemStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500"
       case "shipped":
-        return "bg-blue-500";
+        return "bg-blue-500"
       case "processing":
-        return "bg-yellow-500";
+        return "bg-yellow-500"
       case "cancelled":
-        return "bg-red-500";
+        return "bg-red-500"
       default:
-        return "bg-[#4A5859]";
+        return "bg-[#4A5859]"
     }
-  };
+  }
 
   // Handle cancellation of an order item
   const handleCancelItem = async () => {
-    const { orderId, item, reason } = cancelDialog;
+    const { orderId, item, reason } = cancelDialog
 
     if (!reason.trim()) {
-      toast.error("Please provide a reason for cancellation");
-      return;
+      toast.error("Please provide a reason for cancellation")
+      return
     }
 
     try {
       // Call the API to cancel the item with the reason
       await api.patch(`/customer/order/${orderId}/item/${item.id}/cancel/`, {
         cancellation_reason: reason,
-      });
+      })
 
       // Update the local state
       setOrders((prevOrders) =>
@@ -120,50 +120,50 @@ export default function MyOrders() {
               }
             : order,
         ),
-      );
+      )
 
       // Close the dialog
-      setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" });
+      setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })
 
       // Show success feedback
-      toast.success(`${item.name} has been cancelled successfully.`);
+      toast.success(`${item.name} has been cancelled successfully.`)
     } catch (err) {
       // Show error feedback
-      toast.error(err.response?.data?.message || "Failed to cancel the item. Please try again.");
+      toast.error(err.response?.data?.message || "Failed to cancel the item. Please try again.")
     }
-  };
+  }
 
   // Handle retry payment for Razorpay
   const handleRetryPayment = async (orderId) => {
     try {
-      const response = await api.post("/cart/retry-payment/", { order_id: orderId });
-      const { razorpay_order_id, amount, currency, key } = response.data;
+      const response = await api.post("/cart/retry-payment/", { order_id: orderId })
+      const { razorpay_order_id, amount, currency, key } = response.data
 
       const options = {
         key: key,
         amount: amount,
         currency: currency,
         order_id: razorpay_order_id,
-        handler: async function (response) {
+        handler: async (response) => {
           try {
             const result = await api.post("/cart/razorpay-callback/", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-            });
+            })
 
             if (result.data.success) {
-              toast.success("Payment successful! Order placed.");
+              toast.success("Payment successful! Order placed.")
               // Refresh orders after successful payment
-              const fetchResponse = await api.get("/cart/checkout/");
-              const data = Array.isArray(fetchResponse.data) ? fetchResponse.data : [fetchResponse.data];
-              setOrders(data);
+              const fetchResponse = await api.get("/cart/checkout/")
+              const data = Array.isArray(fetchResponse.data) ? fetchResponse.data : [fetchResponse.data]
+              setOrders(data)
             } else {
-              toast.error("Payment failed. Please try again.");
+              toast.error("Payment failed. Please try again.")
             }
           } catch (err) {
-            console.error("Error verifying payment:", err);
-            toast.error("Payment verification failed. Please contact support.");
+            console.error("Error verifying payment:", err)
+            toast.error("Payment verification failed. Please contact support.")
           }
         },
         prefill: {
@@ -175,42 +175,42 @@ export default function MyOrders() {
           color: "#4A5859",
         },
         modal: {
-          ondismiss: function () {
-            console.log("Razorpay popup closed by user");
+          ondismiss: () => {
+            console.log("Razorpay popup closed by user")
           },
         },
-      };
-
-      if (!window.Razorpay) {
-        console.error("Razorpay SDK not loaded");
-        toast.error("Payment gateway is not available. Please try again later.");
-        return;
       }
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (!window.Razorpay) {
+        console.error("Razorpay SDK not loaded")
+        toast.error("Payment gateway is not available. Please try again later.")
+        return
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.open()
     } catch (err) {
-      console.error("Error processing Razorpay payment:", err);
-      toast.error(err.response?.data?.message || "Failed to retry payment. Please try again.");
+      console.error("Error processing Razorpay payment:", err)
+      toast.error(err.response?.data?.message || "Failed to retry payment. Please try again.")
     }
-  };
+  }
 
   // Pagination logic
-  const indexOfLastOrder = currentPage * ordersPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
-  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const indexOfLastOrder = currentPage * ordersPerPage
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder)
+  const totalPages = Math.ceil(orders.length / ordersPerPage)
 
   const paginate = (pageNumber) => {
     if (pageNumber > 0 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
+      setCurrentPage(pageNumber)
     }
-  };
+  }
 
   return (
-    <Card className="border-[#4A5859]/20 shadow-md">
-      <CardHeader className="border-b border-[#4A5859]/10 bg-[#4A5859] text-white">
-        <CardTitle className="flex items-center gap-2">
+    <Card className="border-[#4A5859]/20 shadow-sm">
+      <CardHeader className="border-b border-[#4A5859]/10 bg-[#4A5859]/5">
+        <CardTitle className="text-[#4A5859] flex items-center gap-2">
           <ShoppingBag className="h-5 w-5" />
           My Orders
         </CardTitle>
@@ -266,9 +266,9 @@ export default function MyOrders() {
                       {order.order_items?.map((item) => (
                         <div
                           key={`${item.name}-${item.variant}`}
-                          className="flex gap-4 bg-white p-3 rounded-lg border border-[#4A5859]/10 hover:border-[#4A5859]/30 transition-all"
+                          className="flex flex-col sm:flex-row gap-4 bg-white p-3 rounded-lg border border-[#4A5859]/10 hover:border-[#4A5859]/30 transition-all"
                         >
-                          <div className="h-24 w-24 rounded-md overflow-hidden flex-shrink-0 border border-[#4A5859]/10">
+                          <div className="h-24 w-24 sm:w-24 rounded-md overflow-hidden flex-shrink-0 border border-[#4A5859]/10 mx-auto sm:mx-0">
                             <img
                               src={item.product_image_url || "/placeholder.svg?height=96&width=96"}
                               alt={item.name}
@@ -276,9 +276,9 @@ export default function MyOrders() {
                             />
                           </div>
                           <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <p className="font-medium text-[#4A5859]">{item.name}</p>
-                              <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row justify-between items-start">
+                              <p className="font-medium text-[#4A5859] text-center sm:text-left">{item.name}</p>
+                              <div className="flex items-center gap-2 mt-2 sm:mt-0 mx-auto sm:mx-0">
                                 <Badge className={`text-white ${getItemStatusColor(item.order_item_status)}`}>
                                   {item.order_item_status}
                                 </Badge>
@@ -446,20 +446,23 @@ export default function MyOrders() {
               placeholder="Enter cancellation reason..."
               value={cancelDialog.reason}
               onChange={(e) => setCancelDialog({ ...cancelDialog, reason: e.target.value })}
-              className="min-h-[100px]"
+              className="min-h-[100px] border-[#4A5859]/30 focus-visible:ring-[#4A5859]"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })}
+              className="border-[#4A5859]/30 text-[#4A5859]"
             >
               Cancel
             </Button>
-            <Button onClick={handleCancelItem}>Submit</Button>
+            <Button onClick={handleCancelItem} className="bg-[#4A5859] hover:bg-[#3A4849] text-white">
+              Submit
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
-  );
+  )
 }
