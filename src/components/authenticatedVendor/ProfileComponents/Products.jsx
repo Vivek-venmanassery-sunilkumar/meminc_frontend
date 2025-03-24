@@ -12,7 +12,6 @@ import api from '@/axios/axiosInstance'; // Assuming you have an API utility
 import CategoryDropdown from './CategoryDropDown'; // Import the CategoryDropdown component
 import extractErrorMessages from '@/components/commoncomponents/errorHandlefunc';
 
-
 export default function Products() {
   // ==================== State Management ====================
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,7 +32,7 @@ export default function Products() {
   // ==================== Image Cropping States ====================
   const [showCropModal, setShowCropModal] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState();
+  const [crop, setCrop] = useState({ aspect: 1 });
   const [completedCrop, setCompletedCrop] = useState(null);
   const imgRef = useRef(null);
   const previewCanvasRef = useRef(null);
@@ -440,11 +439,11 @@ export default function Products() {
 
         {/* Image Cropping Modal */}
         <Dialog open={showCropModal} onOpenChange={setShowCropModal}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Crop Image</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
               {imgSrc && (
                 <div className="flex flex-col items-center gap-4">
                   <ReactCrop
@@ -458,7 +457,7 @@ export default function Products() {
                       alt="Crop me"
                       src={imgSrc}
                       onLoad={onImageLoad}
-                      className="max-h-96"
+                      className="max-h-[60vh]"
                     />
                   </ReactCrop>
                   <div className="hidden">
@@ -467,11 +466,13 @@ export default function Products() {
                       className="hidden"
                     />
                   </div>
-                  <Button onClick={handleCropComplete}>
-                    Complete Crop
-                  </Button>
                 </div>
               )}
+            </div>
+            <div className="bottom-0 bg-background py-4 border-t">
+              <Button onClick={handleCropComplete} className="w-full">
+                Complete Crop
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -736,4 +737,3 @@ export default function Products() {
     </Card>
   );
 }
-
