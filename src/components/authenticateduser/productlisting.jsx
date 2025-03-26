@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,10 @@ export default function ProductListing({
     selectedBrand,
     handleBrandFilter,
     selectedVariants,
-    setSelectedVariants,
+    setSelectedVariants
 }) {
+    const location = useLocation();
+    const [searchTerm, setSearchTerm] = useState("");
     const [cartStatus, setCartStatus] = useState({});
     const [products, setProducts] = useState(initialProducts);
     const [loading, setLoading] = useState(false);
@@ -48,6 +50,16 @@ export default function ProductListing({
     const dispatch = useDispatch();
     const cartItems = useSelector((state) => state.cart.items);
 
+    // Format price in INR
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price);
+    };
+
     // Fetch filter options on component mount
     useEffect(() => {
         const fetchFilterOptions = async () => {
@@ -64,6 +76,7 @@ export default function ProductListing({
                 // Find max price from products
                 const highestPrice = Math.max(
                     ...initialProducts.flatMap((product) => product.variants.map((variant) => variant.price)),
+                    10000
                 );
                 setMaxPrice(highestPrice);
                 setPriceRange([0, highestPrice]);
@@ -76,29 +89,67 @@ export default function ProductListing({
         fetchFilterOptions();
     }, [initialProducts]);
 
+    // Initialize search term from navigation state
+    useEffect(() => {
+        if (location.state?.searchQuery) {
+            setSearchTerm(location.state.searchQuery);
+            // Clear the navigation state after using it
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, location.pathname, navigate]);
+
+    // Initialize filters from URL on mount
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        
+        const urlCategories = params.get('categories');
+        if (urlCategories) {
+            setSelectedCategories(urlCategories.split(',').map(Number));
+        }
+
+        const urlBrands = params.get('brands');
+        if (urlBrands) {
+            setSelectedBrands(urlBrands.split(','));
+        }
+
+        const urlMinPrice = params.get('min_price');
+        const urlMaxPrice = params.get('max_price');
+        if (urlMinPrice || urlMaxPrice) {
+            setPriceRange([
+                Number(urlMinPrice || 0),
+                Number(urlMaxPrice || maxPrice)
+            ]);
+        }
+    }, [maxPrice]);
+
     // Apply filters
-    const applyFilters = async () => {
+    const applyFilters = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
 
+            if (searchTerm) {
+                params.set('search', searchTerm);
+            }
+            
             if (selectedCategories.length > 0) {
-                selectedCategories.forEach((category) => {
-                    params.append("categories", category);
-                });
+                params.set('categories', selectedCategories.join(','));
             }
 
             if (selectedBrands.length > 0) {
-                selectedBrands.forEach((brand) => {
-                    params.append("brands", brand);
-                });
+                params.set('brands', selectedBrands.join(','));
             }
 
-            params.append("min_price", priceRange[0]);
-            params.append("max_price", priceRange[1]);
+            if (priceRange[0] > 0 || priceRange[1] < maxPrice) {
+                params.set('min_price', priceRange[0]);
+                params.set('max_price', priceRange[1]);
+            }
+
+            // Update URL first
+            navigate(`?${params.toString()}`, { replace: true });
 
             const response = await api.get(`/customer/filter/?${params.toString()}`);
-            setProducts(response.data.results); // Update products with filtered results
+            setProducts(response.data.results);
             setPagination({
                 count: response.data.count,
                 totalPages: response.data.total_pages,
@@ -113,7 +164,6 @@ export default function ProductListing({
             } else {
                 toast.error("Failed to apply filters");
             }
-            // Fallback to initial products if filter fails
             setProducts(initialProducts);
             setPagination({
                 count: initialProducts.length,
@@ -124,14 +174,37 @@ export default function ProductListing({
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, selectedCategories, selectedBrands, priceRange, maxPrice, navigate, initialProducts]);
+
+    // Apply filters when filter selections change
+    useEffect(() => {
+        const hasActiveFilters = searchTerm ||
+                               selectedCategories.length > 0 || 
+                               selectedBrands.length > 0 || 
+                               priceRange[0] > 0 || 
+                               priceRange[1] < maxPrice;
+        
+        if (hasActiveFilters) {
+            applyFilters();
+        } else {
+            setProducts(initialProducts);
+            setPagination({
+                count: initialProducts.length,
+                totalPages: 1,
+                next: null,
+                previous: null,
+            });
+        }
+    }, [searchTerm, selectedCategories, selectedBrands, priceRange, applyFilters, initialProducts, maxPrice]);
 
     // Reset filters
     const resetFilters = () => {
+        setSearchTerm('');
         setSelectedCategories([]);
         setSelectedBrands([]);
         setPriceRange([0, maxPrice]);
-        setProducts(initialProducts); // Reset to initial products
+        navigate('?', { replace: true });
+        setProducts(initialProducts);
         setPagination({
             count: initialProducts.length,
             totalPages: 1,
@@ -192,9 +265,6 @@ export default function ProductListing({
         }));
     };
 
-    // Format price in INR
-    const formatPrice = (price) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(price);
-
     // Navigate to product details
     const handleCardClick = async (productId) => {
         try {
@@ -214,23 +284,8 @@ export default function ProductListing({
         }
     };
 
-    // Effect to apply filters when filter selections change
-    useEffect(() => {
-        if (selectedCategories.length > 0 || selectedBrands.length > 0 || priceRange[0] > 0 || priceRange[1] < maxPrice) {
-            applyFilters();
-        } else {
-            setProducts(initialProducts);
-            setPagination({
-                count: initialProducts.length,
-                totalPages: 1,
-                next: null,
-                previous: null,
-            });
-        }
-    }, [selectedCategories, selectedBrands, priceRange]);
-
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-8 px-4 mt-16">
             {/* Mobile filter toggle */}
             <div className="lg:hidden flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Products</h2>
@@ -254,10 +309,31 @@ export default function ProductListing({
                                 <Button variant="ghost" size="sm" onClick={resetFilters} className="text-sm">
                                     Reset
                                 </Button>
+                                {searchTerm && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => setSearchTerm('')}
+                                        className="text-sm"
+                                    >
+                                        Clear Search
+                                    </Button>
+                                )}
                                 <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setShowMobileFilters(false)}>
                                     <X size={16} />
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* Search input */}
+                        <div className="mb-4">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search products..."
+                                className="w-full p-2 border rounded-md text-sm"
+                            />
                         </div>
 
                         {/* Categories filter */}
@@ -363,7 +439,8 @@ export default function ProductListing({
                                 {selectedCategories.length > 0 ||
                                 selectedBrands.length > 0 ||
                                 priceRange[0] > 0 ||
-                                priceRange[1] < maxPrice ? (
+                                priceRange[1] < maxPrice ||
+                                searchTerm ? (
                                     <Badge variant="outline" className="ml-2 cursor-pointer" onClick={resetFilters}>
                                         Filtered <X size={14} className="ml-1" />
                                     </Badge>
@@ -392,10 +469,10 @@ export default function ProductListing({
                     ) : products.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {products.map((product) => {
-                                const selectedVariantId = selectedVariants[product.id] || product.variants[0]?.id
+                                const selectedVariantId = selectedVariants[product.id] || product.variants[0]?.id;
                                 const selectedVariant =
-                                    product.variants.find((variant) => variant.id === selectedVariantId) || product.variants[0]
-                                const isOutOfStock = selectedVariant?.is_out_of_stock
+                                    product.variants.find((variant) => variant.id === selectedVariantId) || product.variants[0];
+                                const isOutOfStock = selectedVariant?.is_out_of_stock;
 
                                 return (
                                     <Card
@@ -447,9 +524,9 @@ export default function ProductListing({
                                                             : "bg-[#4A5859] hover:bg-[#3A4849]"
                                                 }`}
                                                 onClick={(e) => {
-                                                    e.stopPropagation()
+                                                    e.stopPropagation();
                                                     if (!isOutOfStock && !isVariantInCart(selectedVariantId)) {
-                                                        addToCart(product, selectedVariant)
+                                                        addToCart(product, selectedVariant);
                                                     }
                                                 }}
                                                 disabled={isVariantInCart(selectedVariantId) || isOutOfStock}
@@ -466,7 +543,7 @@ export default function ProductListing({
                                             </Button>
                                         </CardFooter>
                                     </Card>
-                                )
+                                );
                             })}
                         </div>
                     ) : (
