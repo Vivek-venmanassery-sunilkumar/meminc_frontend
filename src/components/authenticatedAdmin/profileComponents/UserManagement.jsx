@@ -14,11 +14,13 @@ export default function UserManagement() {
   const [sellerPage, setSellerPage] = useState(1);
   const [customerTotalPages, setCustomerTotalPages] = useState(1);
   const [sellerTotalPages, setSellerTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch paginated data from the backend
-  const fetchData = async(page = 1) => {
+  // Fetch paginated data from the backend with search
+  const fetchData = async(page = 1, search = "") => {
+    setLoading(true);
     const endpoint = activeTable === "customers" ? 'admin/customers/' : 'admin/vendors/';
-    const url = `${endpoint}?page=${page}`;
+    const url = `${endpoint}?page=${page}&search=${search}`;
     try {
       const response = await api.get(url);
       if(activeTable === 'customers') {
@@ -30,22 +32,34 @@ export default function UserManagement() {
       }
     } catch(error) {
       console.error("Error fetching data: ", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Reset to page 1 when switching tabs
-    if (activeTable === "customers") {
-      fetchData(customerPage);
-    } else {
-      fetchData(sellerPage);
-    }
-  }, [activeTable, customerPage, sellerPage]);
+    // Reset to page 1 when switching tabs or search query changes
+    const timer = setTimeout(() => {
+      if (activeTable === "customers") {
+        setCustomerPage(1);
+        fetchData(1, searchQuery);
+      } else {
+        setSellerPage(1);
+        fetchData(1, searchQuery);
+      }
+    }, 500); // Debounce delay
+
+    return () => clearTimeout(timer);
+  }, [activeTable, searchQuery]);
+
+  // Handle page changes
+  useEffect(() => {
+    fetchData(activeTable === "customers" ? customerPage : sellerPage, searchQuery);
+  }, [customerPage, sellerPage]);
 
   // Handle tab change
   const handleTabChange = (tab) => {
     setActiveTable(tab);
-    // Reset search when changing tabs
     setSearchQuery("");
   };
 
@@ -101,23 +115,6 @@ export default function UserManagement() {
     }
   };
 
-  // Filter customers based on search query
-  const filteredCustomers = customers.filter(customer =>
-    customer.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.user__email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone_number?.includes(searchQuery)
-  );
-
-  // Filter sellers based on search query
-  const filteredSellers = sellers.filter(seller =>
-    seller.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.user__email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.phone_number?.includes(searchQuery)
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -140,146 +137,179 @@ export default function UserManagement() {
         </div>
         
         <Input
-          placeholder="Search..."
+          placeholder="Search by name, email, or phone..."
           className="mb-4"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
-        {activeTable === "customers" ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : activeTable === "customers" ? (
           <>
-            <table className="w-full">
-              {/* Customer table headers */}
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Blocked</th>
-                </tr>
-              </thead>
-              {/* Customer table body */}
-              <tbody>
-                {filteredCustomers.map((customer, index) => (
-                  <tr key={customer.user__id}>
-                    <td className="text-center">{(customerPage - 1) * 10 + index + 1}</td>
-                    <td className="text-center">{customer.first_name}</td>
-                    <td className="text-center">{customer.last_name}</td>
-                    <td className="text-center">{customer.user__email}</td>
-                    <td className="text-center">{customer.phone_number}</td>
-                    <td className="text-center">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={customer.user__is_blocked}
-                          onChange={() => handleBlockUser(customer.user__id, true)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                      </label>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="p-3 text-left">ID</th>
+                    <th className="p-3 text-left">First Name</th>
+                    <th className="p-3 text-left">Last Name</th>
+                    <th className="p-3 text-left">Email</th>
+                    <th className="p-3 text-left">Phone</th>
+                    <th className="p-3 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {customers.length > 0 ? (
+                    customers.map((customer, index) => (
+                      <tr key={customer.user__id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <td className="p-3">{(customerPage - 1) * 10 + index + 1}</td>
+                        <td className="p-3">{customer.first_name || '-'}</td>
+                        <td className="p-3">{customer.last_name || '-'}</td>
+                        <td className="p-3">{customer.user__email}</td>
+                        <td className="p-3">{customer.phone_number || '-'}</td>
+                        <td className="p-3">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={customer.user__is_blocked}
+                              onChange={() => handleBlockUser(customer.user__id, true)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            <span className="ml-2 text-sm font-medium">
+                              {customer.user__is_blocked ? 'Blocked' : 'Active'}
+                            </span>
+                          </label>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="p-4 text-center text-gray-500">
+                        No customers found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
             
             {/* Customer pagination */}
-            <div className="flex justify-center mt-4">
-              <Button
-                variant="outline"
-                onClick={() => handleCustomerPageChange(customerPage - 1)}
-                disabled={customerPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="mx-4">
-                Page {customerPage} of {customerTotalPages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => handleCustomerPageChange(customerPage + 1)}
-                disabled={customerPage === customerTotalPages}
-              >
-                Next
-              </Button>
+            <div className="flex justify-between items-center mt-4">
+              <div>
+                <span className="text-sm text-gray-600">
+                  Showing {(customerPage - 1) * 10 + 1} to {Math.min(customerPage * 10, customers.length)} of {customers.length} entries
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleCustomerPageChange(customerPage - 1)}
+                  disabled={customerPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleCustomerPageChange(customerPage + 1)}
+                  disabled={customerPage === customerTotalPages || customers.length === 0}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           </>
         ) : (
           <>
-            <table className="w-full">
-              {/* Seller table headers */}
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Company Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Verify</th>
-                  <th>Blocked</th>
-                </tr>
-              </thead>
-              {/* Seller table body */}
-              <tbody>
-                {filteredSellers.map((seller, index) => (
-                  <tr key={seller.user__id}>
-                    <td className="text-center">{(sellerPage - 1) * 10 + index + 1}</td>
-                    <td className="text-center">{seller.first_name}</td>
-                    <td className="text-center">{seller.last_name}</td>
-                    <td className="text-center">{seller.company_name}</td>
-                    <td className="text-center">{seller.user__email}</td>
-                    <td className="text-center">{seller.phone_number}</td>
-                    <td className="text-center">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleVerifySeller(seller.user__id)}
-                      >
-                        {seller.user__is_verified ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />}
-                      </Button>
-                    </td>
-                    <td className="text-center">
-                      <div className="flex justify-center">
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={seller.user__is_blocked}
-                            onChange={() => handleBlockUser(seller.user__id, false)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                        </label>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="p-3 text-left">ID</th>
+                    <th className="p-3 text-left">First Name</th>
+                    <th className="p-3 text-left">Last Name</th>
+                    <th className="p-3 text-left">Company</th>
+                    <th className="p-3 text-left">Email</th>
+                    <th className="p-3 text-left">Phone</th>
+                    <th className="p-3 text-left">Verified</th>
+                    <th className="p-3 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sellers.length > 0 ? (
+                    sellers.map((seller, index) => (
+                      <tr key={seller.user__id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <td className="p-3">{(sellerPage - 1) * 10 + index + 1}</td>
+                        <td className="p-3">{seller.first_name || '-'}</td>
+                        <td className="p-3">{seller.last_name || '-'}</td>
+                        <td className="p-3">{seller.company_name || '-'}</td>
+                        <td className="p-3">{seller.user__email}</td>
+                        <td className="p-3">{seller.phone_number || '-'}</td>
+                        <td className="p-3">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleVerifySeller(seller.user__id)}
+                            disabled={seller.user__is_verified}
+                          >
+                            {seller.user__is_verified ? 
+                              <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                              <XCircle className="h-5 w-5 text-red-500" />}
+                          </Button>
+                        </td>
+                        <td className="p-3">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={seller.user__is_blocked}
+                              onChange={() => handleBlockUser(seller.user__id, false)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            <span className="ml-2 text-sm font-medium">
+                              {seller.user__is_blocked ? 'Blocked' : 'Active'}
+                            </span>
+                          </label>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="p-4 text-center text-gray-500">
+                        No sellers found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
             
             {/* Seller pagination */}
-            <div className="flex justify-center mt-4">
-              <Button
-                variant="outline"
-                onClick={() => handleSellerPageChange(sellerPage - 1)}
-                disabled={sellerPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="mx-4">
-                Page {sellerPage} of {sellerTotalPages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => handleSellerPageChange(sellerPage + 1)}
-                disabled={sellerPage === sellerTotalPages}
-              >
-                Next
-              </Button>
+            <div className="flex justify-between items-center mt-4">
+              <div>
+                <span className="text-sm text-gray-600">
+                  Showing {(sellerPage - 1) * 10 + 1} to {Math.min(sellerPage * 10, sellers.length)} of {sellers.length} entries
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleSellerPageChange(sellerPage - 1)}
+                  disabled={sellerPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleSellerPageChange(sellerPage + 1)}
+                  disabled={sellerPage === sellerTotalPages || sellers.length === 0}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           </>
         )}
