@@ -44,14 +44,12 @@ export default function BannerManagement() {
     if (banner.is_active === false) {
       return "inactive";
     }
-
     // Then check if it's expired
-    if (!banner.expiry_date) return "inactive";
-    const expiryDate = new Date(banner.expiry_date);
-    if (expiryDate < today) return "expired";
-
+    if(banner.is_active === false){
+      return 'expired'
+    }
     // Then check if it's active based on dates and is_active flag
-    if (banner.is_active === true) {
+    if (banner.is_active === true && banner.is_active_admin === true) {
       return "active";
     }
 

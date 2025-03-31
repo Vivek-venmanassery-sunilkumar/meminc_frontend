@@ -49,7 +49,8 @@ export default function ProductListing() {
   };
 
   // Handle variant selection
-  const handleVariantChange = (productId, variantId) => {
+  const handleVariantChange = (productId, variantId, e) => {
+    e.stopPropagation();
     setSelectedVariants((prev) => ({
       ...prev,
       [productId]: variantId,
@@ -93,7 +94,7 @@ export default function ProductListing() {
 
             return (
               <Card key={product.id} className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-                <Link to="/login" className="flex-grow">
+                <div className="flex-grow">
                   <div className="relative">
                     <img
                       src={selectedVariant?.variant_image || product.product_image || "/placeholder.svg"}
@@ -114,7 +115,7 @@ export default function ProductListing() {
                         <select
                           className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4A5859]"
                           value={selectedVariantId}
-                          onChange={(e) => handleVariantChange(product.id, Number(e.target.value))}
+                          onChange={(e) => handleVariantChange(product.id, Number(e.target.value), e)}
                         >
                           {product.variants.map((variant) => (
                             <option key={variant.id} value={variant.id}>
@@ -128,7 +129,7 @@ export default function ProductListing() {
                       {selectedVariant ? formatPrice(selectedVariant.price) : "N/A"}
                     </div>
                   </CardContent>
-                </Link>
+                </div>
                 <CardFooter className="p-4 border-t mt-auto">
                   <Button 
                     className="w-full bg-[#4A5859] hover:bg-[#3A4849] text-white"

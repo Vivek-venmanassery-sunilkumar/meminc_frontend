@@ -12,9 +12,6 @@ export default function LoggedInAdminHeader() {
           <Logo />
         </div>
         <div className="flex items-center">
-          <Button variant="ghost" className="text-white">
-            <Bell className="h-5 w-5" />
-          </Button>
           <Link to={'/admin-profile/dashboard'}>
           <Button variant="ghost" className="text-white">
                   <User className="h-5 w-5" />

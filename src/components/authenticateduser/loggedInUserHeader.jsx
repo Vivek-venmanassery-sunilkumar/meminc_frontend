@@ -96,9 +96,6 @@ export default function LoggedInUserHeader() {
               </form>
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" className="text-white" aria-label="Notifications">
-                <Bell className="h-5 w-5" />
-              </Button>
               <Button
                 variant="ghost"
                 className="text-white relative"
