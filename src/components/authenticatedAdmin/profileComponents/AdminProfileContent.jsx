@@ -8,11 +8,9 @@ import { useDispatch } from 'react-redux';
 import { logout } from '@/redux/AdminAuthSlice';
 import Dashboard from './Dashboard';
 import UserManagement from './UserManagement';
-import Notifications from './Notifications';
 import BannerManagement from './BannerManagement';
 import Orders from './Orders';
 import Coupons from './Coupons';
-import Concerns from './Concerns';
 import CategoryManagement from './CategoryManagement';
 import AdminWallet from './AdminWallet';
 
@@ -52,11 +50,9 @@ export default function AdminProfileContent() {
             <TabsTrigger value="dashboard" className="w-full text-left">Dashboard</TabsTrigger>
             <TabsTrigger value="categoryManagement" className="w-full text-left">Category Management</TabsTrigger>
             <TabsTrigger value="userManagement" className="w-full text-left">User Management</TabsTrigger>
-            <TabsTrigger value="notifications" className="w-full text-left">Notifications</TabsTrigger>
             <TabsTrigger value="bannerManagement" className="w-full text-left">Banner Management</TabsTrigger>
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
             <TabsTrigger value="coupons" className="w-full text-left">Coupons</TabsTrigger>
-            <TabsTrigger value="concerns" className="w-full text-left">Concerns</TabsTrigger>
             <TabsTrigger value="wallet" className="w-full text-left">Wallet</TabsTrigger>
             <Button
               onClick={handleLogout}
@@ -78,9 +74,6 @@ export default function AdminProfileContent() {
             <TabsContent value="userManagement">
               <UserManagement />
             </TabsContent>
-            <TabsContent value="notifications">
-              <Notifications />
-            </TabsContent>
             <TabsContent value="bannerManagement">
               <BannerManagement />
             </TabsContent>
@@ -89,9 +82,6 @@ export default function AdminProfileContent() {
             </TabsContent>
             <TabsContent value="coupons">
               <Coupons />
-            </TabsContent>
-            <TabsContent value="concerns">
-              <Concerns />
             </TabsContent>
             <TabsContent value="wallet">
               <AdminWallet /> {/* Add AdminWallet Component */}
@@ -103,14 +93,3 @@ export default function AdminProfileContent() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

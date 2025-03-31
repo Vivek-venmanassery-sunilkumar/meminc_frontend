@@ -29,10 +29,11 @@ export default function MyOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const ordersPerPage = 1 // Changed to 1 order per page
+  const ordersPerPage = 1
 
   // Cancellation dialog state
   const [cancelDialog, setCancelDialog] = useState({
@@ -103,12 +104,10 @@ export default function MyOrders() {
     }
 
     try {
-      // Call the API to cancel the item with the reason
       await api.patch(`/customer/order/${orderId}/item/${item.id}/cancel/`, {
         cancellation_reason: reason,
       })
 
-      // Update the local state
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order.order_id === orderId
@@ -122,13 +121,9 @@ export default function MyOrders() {
         ),
       )
 
-      // Close the dialog
       setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })
-
-      // Show success feedback
       toast.success(`${item.name} has been cancelled successfully.`)
     } catch (err) {
-      // Show error feedback
       toast.error(err.response?.data?.message || "Failed to cancel the item. Please try again.")
     }
   }
@@ -154,7 +149,6 @@ export default function MyOrders() {
 
             if (result.data.success) {
               toast.success("Payment successful! Order placed.")
-              // Refresh orders after successful payment
               const fetchResponse = await api.get("/cart/checkout/")
               const data = Array.isArray(fetchResponse.data) ? fetchResponse.data : [fetchResponse.data]
               setOrders(data)
@@ -192,6 +186,19 @@ export default function MyOrders() {
     } catch (err) {
       console.error("Error processing Razorpay payment:", err)
       toast.error(err.response?.data?.message || "Failed to retry payment. Please try again.")
+    }
+  }
+
+  // Handle generate invoice
+  const handleGenerateInvoice = async (orderId) => {
+    setGeneratingInvoice(true)
+    try {
+      await api.get(`/customer/orders/invoice/${orderId}/`)
+      toast.success("Invoice has been sent to your email address.")
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to generate invoice. Please try again.")
+    } finally {
+      setGeneratingInvoice(false)
     }
   }
 
@@ -255,11 +262,19 @@ export default function MyOrders() {
                         })}
                       </p>
                     </div>
+                    {order.order_status?.toLowerCase() === "delivered" && (
+                      <Button
+                        onClick={() => handleGenerateInvoice(order.order_id)}
+                        disabled={generatingInvoice}
+                        className="bg-[#4A5859] hover:bg-[#3A4849] text-white"
+                      >
+                        {generatingInvoice ? "Generating..." : "Generate Invoice"}
+                      </Button>
+                    )}
                   </div>
                 </div>
 
                 <CardContent className="p-5">
-                  {/* Order Items */}
                   <div className="mb-6">
                     <h4 className="font-medium text-sm text-[#4A5859]/70 mb-4 uppercase tracking-wider">Order Items</h4>
                     <div className="space-y-5">
@@ -321,9 +336,7 @@ export default function MyOrders() {
 
                   <Separator className="my-5 bg-[#4A5859]/10" />
 
-                  {/* Shipping and Payment Info */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    {/* Shipping Information */}
                     <div>
                       <h4 className="font-medium text-sm text-[#4A5859]/70 mb-3 flex items-center gap-2 uppercase tracking-wider">
                         <MapPin className="h-4 w-4" /> Shipping Address
@@ -340,7 +353,6 @@ export default function MyOrders() {
                       </div>
                     </div>
 
-                    {/* Payment Information */}
                     <div>
                       <h4 className="font-medium text-sm text-[#4A5859]/70 mb-3 flex items-center gap-2 uppercase tracking-wider">
                         <CreditCard className="h-4 w-4" /> Payment Details
@@ -385,7 +397,6 @@ export default function MyOrders() {
               </Card>
             ))}
 
-            {/* Pagination */}
             {orders.length > ordersPerPage && (
               <Pagination className="mt-8">
                 <PaginationContent>
@@ -431,7 +442,6 @@ export default function MyOrders() {
         )}
       </CardContent>
 
-      {/* Cancellation Reason Dialog */}
       <Dialog
         open={cancelDialog.isOpen}
         onOpenChange={(isOpen) => !isOpen && setCancelDialog({ isOpen: false, orderId: null, item: null, reason: "" })}

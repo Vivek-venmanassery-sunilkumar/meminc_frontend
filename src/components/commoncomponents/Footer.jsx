@@ -17,34 +17,7 @@ export default function Footer() {
           <h3 className="font-bold mb-4 text-[#F0EAD6]">Contact</h3>
           <p>123 Meat Street, Foodville</p>
           <p>Phone: (123) 456-7890</p>
-          <p>Email: info@meatmarket.com</p>
-        </div>
-
-        {/* Customer Service Section */}
-        <div>
-          <h3 className="font-bold mb-4 text-[#F0EAD6]">Customer Service</h3>
-          <ul>
-            <li>
-              <a href="#" className="hover:text-[#D4AF37]">
-                FAQ
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-[#D4AF37]">
-                Shipping & Returns
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-[#D4AF37]">
-                Terms & Conditions
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-[#D4AF37]">
-                Privacy Policy
-              </a>
-            </li>
-          </ul>
+          <p>Email: meminccorporation@gmail.com</p>
         </div>
 
         {/* Follow Us Section */}

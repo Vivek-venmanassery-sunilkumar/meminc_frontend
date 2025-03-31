@@ -9,7 +9,7 @@ export default function Landingpage(){
     return(
         <>
             <Header/>
-            <main className="pt-[120px]">
+            <main className="pt-[80px]">
                 <BannerCarousel/>
                 <ProductListing/>
                 <Footer/>

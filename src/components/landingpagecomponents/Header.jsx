@@ -1,24 +1,10 @@
-
-
 import { useState, useEffect } from "react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Menu, X } from 'lucide-react'
-import {Link} from 'react-router-dom'
+import { Menu, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Logo from "../commoncomponents/logo"
 
-const categories = [
-  "Eggs",
-  "Fish & Seafood",
-  "Marinades",
-  "Mutton & Lamb",
-  "Pork & other Meats",
-  "Poultry",
-  "Sausage,Bacon & salami",
-]
-
 export default function Header() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -30,11 +16,6 @@ export default function Header() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-    console.log(`Searching for: ${searchTerm}`)
-  }
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -52,41 +33,14 @@ export default function Header() {
           )}
         </div>
         <div className={`w-full lg:w-4/5 flex flex-col ${isMobile && !isMobileMenuOpen ? 'hidden' : 'flex'}`}>
-          <div className="flex flex-col lg:flex-row items-center justify-between mb-2 p-2 bg-[#3A4849] rounded-lg">
-            <div className="w-full lg:flex-grow lg:mr-4 mb-2 lg:mb-0">
-              <form onSubmit={handleSearch} className="flex items-center">
-                <Input
-                  type="search"
-                  placeholder="Search..."
-                  className="w-full bg-white"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <Button type="submit" variant="ghost" className="ml-2 text-white">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" className="bg-[#F0EAD6] text-[#4A5859] hover:bg-[#E6DCC8] text-sm lg:text-base">
-                <Link to="/register">Register</Link>  
-              </Button>
-              <Button variant="outline" className="bg-[#D4AF37] text-[#4A5859] hover:bg-[#C4A137] text-sm lg:text-base">
-                <Link to="/login">Log In</Link>
-              </Button>
-            </div>
+          <div className="flex items-center justify-end space-x-2 mb-2 p-2">
+            <Button variant="outline" className="bg-[#F0EAD6] text-[#4A5859] hover:bg-[#E6DCC8] text-sm lg:text-base">
+              <Link to="/register">Register</Link>  
+            </Button>
+            <Button variant="outline" className="bg-[#D4AF37] text-[#4A5859] hover:bg-[#C4A137] text-sm lg:text-base">
+              <Link to="/login">Log In</Link>
+            </Button>
           </div>
-          <nav>
-            <ul className="flex flex-col lg:flex-row flex-wrap justify-start -mx-2">
-              {categories.map((category, index) => (
-                <li key={index} className="px-2 py-1">
-                  <a href="#" className="text-white hover:text-[#F0EAD6] text-sm whitespace-nowrap">
-                    {category}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
         </div>
       </div>
     </header>
