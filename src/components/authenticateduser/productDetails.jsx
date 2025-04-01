@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Minus, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateCartItem, setCartData } from '../../redux/CartSlice';
-import { fetchWishlistStart, fetchWishlistSuccess, fetchWishlistFailure, removeWishlistItem } from '../../redux/wishlistSlice'; // Import wishlist actions
+import { fetchWishlistStart, fetchWishlistSuccess, fetchWishlistFailure, removeWishlistItem } from '../../redux/WishlistSlice'; // Import wishlist actions
 import api from "@/axios/axiosInstance";
 import toast from "react-hot-toast";
 import extractErrorMessages from "../commoncomponents/errorHandlefunc";
