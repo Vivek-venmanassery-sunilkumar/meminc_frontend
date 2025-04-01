@@ -12,7 +12,7 @@ import { Filter, ShoppingCart, X, ChevronDown, ChevronUp } from "lucide-react";
 import api from "@/axios/axiosInstance";
 import extractErrorMessages from "../commoncomponents/errorHandlefunc";
 import { clearProductDetails, setProductDetails } from "@/redux/ProductDetailsSlice";
-import { updateCartItem } from "@/redux/cartSlice";
+import { updateCartItem } from "@/redux/CartSlice";
 import toast from "react-hot-toast";
 
 export default function ProductListing({
