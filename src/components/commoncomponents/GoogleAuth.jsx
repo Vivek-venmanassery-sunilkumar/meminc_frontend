@@ -17,7 +17,7 @@ const GoogleAuth = () => {
 
     const handleSuccess = (response) => {
         console.log(response);
-        api.post('http://localhost:8000/register/google/', {
+        api.post('register/google/', {
             token: response.credential,
         })
         .then((res) => {

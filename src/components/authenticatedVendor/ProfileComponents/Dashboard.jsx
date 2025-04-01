@@ -49,6 +49,10 @@ export default function VendorDashboard() {
 
   // Function to format numbers as Indian Rupees
   const formatIndianRupees = (amount) => {
+    // Handle null or undefined values
+    if (amount === null || amount === undefined) {
+      return "Rs. 0";
+    }
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
@@ -138,7 +142,7 @@ export default function VendorDashboard() {
         ["Completed Orders", data.completed_orders.toString()],
         ["Cancelled Orders", data.cancelled_orders.toString()],
         ["Pending Orders", data.pending_orders.toString()],
-        ["Top Selling Product", data.top_selling_product],
+        ["Top Selling Product", data.top_selling_product || "N/A"],
       ];
 
       autoTable(doc, {
@@ -160,7 +164,7 @@ export default function VendorDashboard() {
       doc.setFont("helvetica", "bold");
       doc.text("Order Details", 15, doc.lastAutoTable.finalY + 20);
 
-      // Create order details table with Rs. prefix
+      // Create order details table with Rs. prefix, handling null values
       const orderTableData = orderData.map((order) => [
         order.id.toString(),
         order.vendor,
@@ -168,43 +172,40 @@ export default function VendorDashboard() {
         order.quantity.toString(),
         order.status,
         order.vendor_amount_paid ? "Paid" : "Unpaid",
-        `Rs. ${order.vendor_paid_amount.toLocaleString("en-IN")}`,
+        // Handle null vendor_paid_amount
+        order.vendor_paid_amount !== null ? `Rs. ${order.vendor_paid_amount.toLocaleString("en-IN")}` : "Rs. 0",
       ]);
 
-      // Add order details table with adjusted column widths
+      // Add order details table with adjusted column widths to fit page
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 25,
-        head: [["ID", "Vendor", "Company", "Qty", "Status", "Payment Status", "Amount"]],
+        head: [["ID", "Vendor", "Company", "Qty", "Status", "Payment", "Amount"]],
         body: orderTableData,
         theme: "grid",
         headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
-        styles: { fontSize: 9 },
+        styles: { fontSize: 8 }, // Reduced font size
         columnStyles: {
-          0: { cellWidth: 15 },  // ID
-          1: { cellWidth: 35 },  // Vendor
-          2: { cellWidth: 40 },  // Company
-          3: { cellWidth: 15 },  // Qty
-          4: { cellWidth: 25 },  // Status
-          5: { cellWidth: 25 },  // Payment Status
-          6: { cellWidth: 25, halign: "right" },  // Amount
+          0: { cellWidth: 15 },      // ID
+          1: { cellWidth: 30 },      // Vendor - reduced width
+          2: { cellWidth: 30 },      // Company - reduced width
+          3: { cellWidth: 15 },      // Qty
+          4: { cellWidth: 20 },      // Status
+          5: { cellWidth: 20 },      // Payment Status - shortened name
+          6: { cellWidth: 20, halign: "right" }, // Amount - reduced width
         },
         margin: { left: 10, right: 10 },
-        tableWidth: 'wrap'
+        didDrawPage: function (data) {
+          // Add footer on each page
+          doc.setFontSize(8);
+          doc.setTextColor(0, 0, 0);
+          doc.text(
+            `${data.company_name} - Confidential | Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${doc.internal.getNumberOfPages()}`,
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: "center" },
+          );
+        }
       });
-
-      // Add footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        doc.text(
-          `${data.company_name} - Confidential | Page ${i} of ${pageCount}`,
-          pageWidth / 2,
-          doc.internal.pageSize.getHeight() - 10,
-          { align: "center" },
-        );
-      }
 
       // Save the PDF
       doc.save(`${data.company_name}-Sales-Report-${filter}-${new Date().toISOString().split("T")[0]}.pdf`);
@@ -284,7 +285,7 @@ export default function VendorDashboard() {
               <CardContent>
                 <div className="flex items-center">
                   <IndianRupee className="h-5 w-5 text-amber-500 mr-2" />
-                  <span className="text-2xl font-bold">{data.payout_pending}</span>
+                  <span className="text-2xl font-bold">{formatIndianRupees(data.payout_pending)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -308,7 +309,7 @@ export default function VendorDashboard() {
               <CardContent>
                 <div className="flex items-center">
                   <Store className="h-5 w-5 text-purple-500 mr-2" />
-                  <span className="text-2xl font-bold">{data.top_selling_product}</span>
+                  <span className="text-2xl font-bold">{data.top_selling_product || "N/A"}</span>
                 </div>
               </CardContent>
             </Card>
@@ -410,7 +411,9 @@ export default function VendorDashboard() {
                                 ? "bg-green-100 text-green-800"
                                 : order.status === "pending"
                                   ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-blue-100 text-blue-800"
+                                  : order.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-blue-100 text-blue-800"
                             }`}
                           >
                             {order.status}
