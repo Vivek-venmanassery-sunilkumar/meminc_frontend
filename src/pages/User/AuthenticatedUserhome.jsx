@@ -5,7 +5,7 @@ import Footer from "@/components/commoncomponents/Footer"
 import api from "@/axios/axiosInstance"
 import BannerCarousel from "@/components/commoncomponents/Carousalcommon"
 import { useDispatch } from "react-redux"
-import { setCartData } from "@/redux/cartSlice" // Import the action
+import { setCartData } from "@/redux/CartSlice" // Import the action
 import { fetchWishlistSuccess } from "@/redux/WishListSlice"
 import LoadingSpinner from "@/components/authenticateduser/loading-spinner" // Import the new loading component
 
