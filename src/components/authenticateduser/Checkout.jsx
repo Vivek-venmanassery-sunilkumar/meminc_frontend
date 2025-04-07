@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -35,18 +35,18 @@ export default function Checkout() {
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [discountedTotal, setDiscountedTotal] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [paymentMode, setPaymentMode] = useState("cash_on_delivery"); // Track payment mode
-  const [walletBalance, setWalletBalance] = useState(0); // Wallet balance state
-  const [isWalletEnabled, setIsWalletEnabled] = useState(false); // Enable/disable wallet option
-
+  const [paymentMode, setPaymentMode] = useState("cash_on_delivery");
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [isWalletEnabled, setIsWalletEnabled] = useState(false);
+  
+  const toastShownRef = useRef(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Access the cart state
   const cart = useSelector((state) => state.cart);
   const { items, totalPrice } = cart;
 
-  // Fetch wallet balance on component mount
+  // Fetch wallet balance
   useEffect(() => {
     const fetchWalletBalance = async () => {
       try {
@@ -60,7 +60,7 @@ export default function Checkout() {
     fetchWalletBalance();
   }, []);
 
-  // Check if wallet balance is sufficient whenever discountedTotal changes
+  // Check wallet balance
   useEffect(() => {
     setIsWalletEnabled(walletBalance >= discountedTotal);
   }, [walletBalance, discountedTotal]);
@@ -70,12 +70,6 @@ export default function Checkout() {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => {
-      console.log("Razorpay SDK loaded successfully");
-    };
-    script.onerror = () => {
-      console.error("Failed to load Razorpay SDK");
-    };
     document.body.appendChild(script);
 
     return () => {
@@ -83,7 +77,7 @@ export default function Checkout() {
     };
   }, []);
 
-  // Update discountedTotal when totalPrice changes
+  // Update discounted total
   useEffect(() => {
     setDiscountedTotal(Number(totalPrice) || 0);
   }, [totalPrice]);
@@ -93,19 +87,32 @@ export default function Checkout() {
     if (Number(totalPrice) === 0) {
       navigate("/customer");
     }
-  }, []);
+  }, [navigate, totalPrice]);
 
-  // Fetch customer addresses and available coupons
+  // Fetch addresses and coupons
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
         const response = await api.get("customer/addresses/");
         setAddresses(response.data);
-        if (response.data.length > 0) {
-          setSelectedAddress(response.data[0].id);
+        
+        if (response.data.length === 0) {
+          if (!toastShownRef.current) {
+            toastShownRef.current = true;
+            toast.error("Please add a shipping address before checkout");
+            navigate("/customer-profile/addresses");
+          }
+          return;
         }
+        
+        setSelectedAddress(response.data[0].id);
       } catch (err) {
         setError(err.message || "Failed to fetch addresses");
+        if (!toastShownRef.current) {
+          toastShownRef.current = true;
+          toast.error("Failed to load addresses. Please try again.");
+          navigate("/customer-profile/addresses");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -114,24 +121,17 @@ export default function Checkout() {
     const fetchCoupons = async () => {
       try {
         const response = await api.get("customer/coupons/", {
-          params: {
-            total_price: totalPrice,
-          },
+          params: { total_price: totalPrice }
         });
-        if (response.data && response.data.length > 0) {
-          setCoupons(response.data);
-        } else {
-          console.log("No available coupons");
-        }
+        setCoupons(response.data || []);
       } catch (err) {
         console.error("Failed to fetch coupons:", err);
-        toast.error("Failed to fetch coupons");
       }
     };
 
     fetchAddresses();
     fetchCoupons();
-  }, [totalPrice]);
+  }, [totalPrice, navigate]);
 
   // Handle coupon selection
   const handleCouponChange = (couponId) => {
@@ -146,21 +146,16 @@ export default function Checkout() {
 
     if (totalPrice < coupon.min_order_value) {
       toast.error(`This coupon requires a minimum order of ₹${coupon.min_order_value}`);
-      setSelectedCoupon(null);
-      setDiscount(0);
-      setDiscountedTotal(Number(totalPrice) || 0);
       return;
     }
 
     let calculatedDiscount = 0;
-
     if (coupon.coupon_type === "flat") {
       calculatedDiscount = Number(coupon.discount_value);
-    } else if (coupon.coupon_type === "percentage") {
+    } else {
       calculatedDiscount = (totalPrice * Number(coupon.discount_value)) / 100;
       if (coupon.max_discount && calculatedDiscount > Number(coupon.max_discount)) {
         calculatedDiscount = Number(coupon.max_discount);
-        toast.success(`Maximum discount of ₹${coupon.max_discount} applied for this coupon.`);
       }
     }
 
@@ -177,74 +172,43 @@ export default function Checkout() {
         payment_mode: "card",
         items: items.map((item) => ({
           variant_id: item.variant_id,
-          quantity: item.quantity,
+          quantity: item.quantity
         })),
         total_price: discountedTotal,
-        coupon_id: selectedCoupon ? selectedCoupon.id : null,
+        coupon_id: selectedCoupon?.id || null
       };
 
       const response = await api.post("cart/checkout/", orderData);
       const { razorpay_order_id, amount, currency, key } = response.data;
 
       const options = {
-        key: key,
-        amount: amount,
-        currency: currency,
+        key,
+        amount,
+        currency,
         order_id: razorpay_order_id,
-        handler: async function (response) {
+        handler: async (response) => {
           try {
-            const result = await api.post("cart/razorpay-callback/", {
+            await api.post("cart/razorpay-callback/", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
+              razorpay_signature: response.razorpay_signature
             });
-
-            if (result.data.success) {
-              toast.success("Payment successful! Order placed.");
-              dispatch(clearCart());
-              navigate("/customer-profile/orders");
-            } else {
-              toast.error("Payment failed. Please try again.");
-              navigate("/customer-profile/orders/");
-            }
-          } catch (err) {
-            console.error("Error verifying payment:", err);
-            toast.error("Payment verification failed. Please contact support.");
-            navigate("/customer-profile/orders/");
-          }
-        },
-        prefill: {
-          name: "Customer Name",
-          email: "customer@example.com",
-          contact: "9999999999",
-        },
-        theme: {
-          color: "#4A5859",
-        },
-        modal: {
-          ondismiss: function () {
+            toast.success("Payment successful! Order placed.");
             dispatch(clearCart());
             navigate("/customer-profile/orders");
-          },
+          } catch (err) {
+            toast.error("Payment verification failed");
+            navigate("/customer-profile/orders");
+          }
         },
+        theme: { color: "#4A5859" }
       };
-
-      if (!window.Razorpay) {
-        toast.error("Payment gateway is not available. Please try again later.");
-        return;
-      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error("Error processing Razorpay payment:", err);
-      if (err.response && err.response.data) {
-        const errorMessage = extractErrorMessages(err.response.data).join(",");
-        toast.error(errorMessage);
-      } else {
-        toast.error("Failed to process payment. Please try again.");
-      }
-      navigate("/customer-profile/orders/");
+      toast.error(extractErrorMessages(err.response?.data).join(", ") || "Payment failed");
+      navigate("/customer-profile/orders");
     }
   };
 
@@ -252,80 +216,69 @@ export default function Checkout() {
   const handleWalletPayment = async () => {
     setIsPlacingOrder(true);
     try {
-      const orderData = {
+      await api.post("cart/checkout/", {
         address_id: selectedAddress,
         payment_mode: "wallet",
         items: items.map((item) => ({
           variant_id: item.variant_id,
-          quantity: item.quantity,
+          quantity: item.quantity
         })),
         total_price: discountedTotal,
-        coupon_id: selectedCoupon ? selectedCoupon.id : null,
-      };
-
-      const response = await api.post("cart/checkout/", orderData);
-      console.log("Order placed using wallet:", response.data);
-
-      setOrderSuccess(true);
+        coupon_id: selectedCoupon?.id || null
+      });
       toast.success("Order placed successfully using wallet");
-      navigate("/customer-profile/orders");
       dispatch(clearCart());
+      navigate("/customer-profile/orders");
     } catch (err) {
-      setError(err.message || "Failed to place order using wallet");
+      toast.error("Failed to place order using wallet");
     } finally {
       setIsPlacingOrder(false);
     }
   };
 
-// Handle place order
-const handlePlaceOrder = () => {
-  if (!selectedAddress) {
-    toast.error("Please select a shipping address");
-    return;
-  }
+  // Handle place order
+  const handlePlaceOrder = () => {
+    if (!selectedAddress) {
+      toast.error("Please select a shipping address");
+      return;
+    }
 
-  // For Cash on Delivery, show the confirmation dialog
-  if (paymentMode === "cash_on_delivery") {
-    setShowConfirmDialog(true); // Show the confirmation dialog
-  } else if (paymentMode === "card") {
-    setIsPlacingOrder(true); // Disable the button and show loading spinner for card payment
-    handleRazorpayPayment();
-  } else if (paymentMode === "wallet") {
-    setIsPlacingOrder(true); // Disable the button and show loading spinner for wallet payment
-    handleWalletPayment();
-  }
-};
+    if (paymentMode === "cash_on_delivery") {
+      setShowConfirmDialog(true);
+    } else if (paymentMode === "card") {
+      setIsPlacingOrder(true);
+      handleRazorpayPayment();
+    } else if (paymentMode === "wallet") {
+      setIsPlacingOrder(true);
+      handleWalletPayment();
+    }
+  };
 
-// Confirm order for Cash on Delivery
-const confirmOrder = async () => {
-  setIsPlacingOrder(true); // Disable the confirmation button and show loading spinner
-  try {
-    const orderData = {
-      address_id: selectedAddress,
-      payment_mode: "cash_on_delivery",
-      items: items.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-      })),
-      total_price: discountedTotal,
-      coupon_id: selectedCoupon ? selectedCoupon.id : null,
-    };
+  // Confirm COD order
+  const confirmOrder = async () => {
+    setIsPlacingOrder(true);
+    try {
+      await api.post("cart/checkout/", {
+        address_id: selectedAddress,
+        payment_mode: "cash_on_delivery",
+        items: items.map((item) => ({
+          variant_id: item.variant_id,
+          quantity: item.quantity
+        })),
+        total_price: discountedTotal,
+        coupon_id: selectedCoupon?.id || null
+      });
+      toast.success("Order placed successfully");
+      dispatch(clearCart());
+      navigate("/customer-profile/orders");
+    } catch (err) {
+      toast.error("Failed to place order");
+    } finally {
+      setIsPlacingOrder(false);
+      setShowConfirmDialog(false);
+    }
+  };
 
-    const response = await api.post("cart/checkout/", orderData);
-    console.log("Order placed:", response.data);
-
-    setOrderSuccess(true);
-    toast.success("Order placed successfully");
-    navigate("/customer-profile/orders");
-    dispatch(clearCart());
-  } catch (err) {
-    setError(err.message || "Failed to place order");
-    toast.error("Failed to place order. Please try again.");
-  } finally {
-    setIsPlacingOrder(false); // Re-enable the confirmation button
-    setShowConfirmDialog(false); // Close the dialog
-  }
-};
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -440,13 +393,14 @@ const confirmOrder = async () => {
               <select
                 className="w-full p-2 border border-[#4A5859]/10 rounded-lg"
                 onChange={(e) => handleCouponChange(e.target.value)}
+                value={selectedCoupon?.id || ""}
               >
                 <option value="">Select a coupon</option>
                 {coupons.map((coupon) => (
                   <option key={coupon.id} value={coupon.id}>
                     {coupon.code} - {coupon.coupon_type === "flat"
                       ? `₹${coupon.discount_value} off`
-                      : `${coupon.discount_value}% off (up to ₹${coupon.max_discount})`}
+                      : `${coupon.discount_value}% off`}
                   </option>
                 ))}
               </select>
@@ -464,7 +418,6 @@ const confirmOrder = async () => {
             <CardContent className="p-4">
               <RadioGroup value={paymentMode} onValueChange={setPaymentMode}>
                 <div className="space-y-4">
-                  {/* Cash on Delivery Option */}
                   <div className="border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 cursor-pointer">
                     <div className="flex items-center">
                       <RadioGroupItem value="cash_on_delivery" id="cash_on_delivery" />
@@ -477,7 +430,6 @@ const confirmOrder = async () => {
                     </div>
                   </div>
 
-                  {/* Card Payment Option */}
                   <div className="border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 cursor-pointer">
                     <div className="flex items-center">
                       <RadioGroupItem value="card" id="card" />
@@ -490,7 +442,6 @@ const confirmOrder = async () => {
                     </div>
                   </div>
 
-                  {/* Wallet Payment Option */}
                   <div
                     className={`border border-[#4A5859] bg-[#4A5859]/5 rounded-lg p-4 ${
                       isWalletEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-50"
@@ -506,7 +457,7 @@ const confirmOrder = async () => {
                       <Label htmlFor="wallet" className="ml-2 cursor-pointer">
                         <div className="text-[#4A5859] font-medium">Wallet Payment</div>
                         <div className="text-[#4A5859]/70 text-sm mt-1">
-                          Pay using your wallet balance (₹{walletBalance.toFixed(2)} available)
+                          Balance: ₹{walletBalance.toFixed(2)}
                         </div>
                       </Label>
                     </div>
@@ -529,9 +480,7 @@ const confirmOrder = async () => {
               {selectedCoupon && (
                 <div className="flex justify-between">
                   <span className="text-[#4A5859]/70">Discount</span>
-                  <span className="text-[#4A5859]">
-                    -₹{discount.toFixed(2)}
-                  </span>
+                  <span className="text-[#4A5859]">-₹{discount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -553,9 +502,9 @@ const confirmOrder = async () => {
             onClick={handlePlaceOrder}
             className="bg-[#4A5859] hover:bg-[#3A4849] text-white font-bold py-6 px-8 rounded-lg w-full md:w-auto transition-colors"
             size="lg"
-            disabled={isPlacingOrder} // Disable the button when order is being placed
+            disabled={isPlacingOrder}
           >
-            {isPlacingOrder ? ( // Show loading spinner if order is being placed
+            {isPlacingOrder ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Placing Order...
@@ -568,50 +517,47 @@ const confirmOrder = async () => {
       </div>
 
       {/* Order Confirmation Dialog */}
-  <AlertDialog
-    open={showConfirmDialog}
-    onOpenChange={(open) => {
-      if (!orderSuccess) {
-        setShowConfirmDialog(open);
-      }
-    }}
-  >
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{orderSuccess ? "Order Placed Successfully!" : "Confirm Your Order"}</AlertDialogTitle>
-      <AlertDialogDescription>
-        {orderSuccess ? (
-          <div className="flex flex-col items-center justify-center py-4">
-            <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
-            <div>Your order has been placed successfully!</div>
-            <div className="text-sm text-muted-foreground mt-1">Redirecting to your orders...</div>
-          </div>
-        ) : (
-          "Are you sure you want to place this order? This action cannot be undone."
-        )}
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    {!orderSuccess && (
-      <AlertDialogFooter>
-        <AlertDialogCancel disabled={isPlacingOrder}>No, Cancel</AlertDialogCancel>
-        <AlertDialogAction
-          onClick={confirmOrder}
-          disabled={isPlacingOrder} // Disable only during API call
-          className="bg-[#4A5859] hover:bg-[#3A4849]"
-        >
-          {isPlacingOrder ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            "Yes, Place Order"
+      <AlertDialog
+        open={showConfirmDialog}
+        onOpenChange={(open) => !orderSuccess && setShowConfirmDialog(open)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {orderSuccess ? "Order Placed Successfully!" : "Confirm Your Order"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {orderSuccess ? (
+                <div className="flex flex-col items-center justify-center py-4">
+                  <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
+                  <div>Your order has been placed successfully!</div>
+                </div>
+              ) : (
+                "Are you sure you want to place this order? This action cannot be undone."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!orderSuccess && (
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPlacingOrder}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmOrder}
+                disabled={isPlacingOrder}
+                className="bg-[#4A5859] hover:bg-[#3A4849]"
+              >
+                {isPlacingOrder ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm Order"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
           )}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    )}
-  </AlertDialogContent>
-</AlertDialog>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
