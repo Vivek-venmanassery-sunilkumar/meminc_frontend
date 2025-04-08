@@ -236,7 +236,7 @@ const downloadSalesReport = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl font-bold">MEMInc Dashboard</CardTitle>
-              <CardDescription>performance {getPeriodText()}</CardDescription>
+              <CardDescription>Sales performance {getPeriodText()}</CardDescription>
             </div>
             <Button onClick={downloadSalesReport} className="bg-primary hover:bg-primary/90" disabled={isLoading}>
               <Download className="mr-2 h-4 w-4" />
