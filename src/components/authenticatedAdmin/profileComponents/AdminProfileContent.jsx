@@ -13,6 +13,7 @@ import Orders from './Orders';
 import Coupons from './Coupons';
 import CategoryManagement from './CategoryManagement';
 import AdminWallet from './AdminWallet';
+import AdminProducts from './AdminProducts';
 
 export default function AdminProfileContent() {
   const { tab } = useParams(); // Get the active tab from the URL
@@ -51,6 +52,7 @@ export default function AdminProfileContent() {
             <TabsTrigger value="categoryManagement" className="w-full text-left">Category Management</TabsTrigger>
             <TabsTrigger value="userManagement" className="w-full text-left">User Management</TabsTrigger>
             <TabsTrigger value="bannerManagement" className="w-full text-left">Banner Management</TabsTrigger>
+            <TabsTrigger value ='adminproducts' className="w-full text-left">Product Management</TabsTrigger>
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
             <TabsTrigger value="coupons" className="w-full text-left">Coupons</TabsTrigger>
             <TabsTrigger value="wallet" className="w-full text-left">Wallet</TabsTrigger>
@@ -76,6 +78,9 @@ export default function AdminProfileContent() {
             </TabsContent>
             <TabsContent value="bannerManagement">
               <BannerManagement />
+            </TabsContent>
+            <TabsContent value='adminproducts'>
+              <AdminProducts/>
             </TabsContent>
             <TabsContent value="orders">
               <Orders />

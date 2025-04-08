@@ -4,32 +4,32 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Edit, Trash2, X } from 'lucide-react';
+import { Edit, Trash2, X, Check, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import api from '@/axios/axiosInstance'; // Assuming you have an API utility
-import CategoryDropdown from './CategoryDropDown'; // Import the CategoryDropdown component
+import api from '@/axios/axiosInstance';
+import CategoryDropdown from './CategoryDropDown';
 import extractErrorMessages from '@/components/commoncomponents/errorHandlefunc';
 
 export default function Products() {
-  // ==================== State Management ====================
+  // State Management
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [products, setProducts] = useState([]);
-  const [allProducts, setAllProducts] = useState([]); // State for all products
+  const [allProducts, setAllProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const ITEMS_PER_PAGE = 10; // Define items per page
+  const ITEMS_PER_PAGE = 10;
 
-  // ==================== Edit Mode States ====================
+  // Edit Mode States
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
-  const [imagesToDelete, setImagesToDelete] = useState([]); // Track images to delete during edit mode
+  const [imagesToDelete, setImagesToDelete] = useState([]);
 
-  // ==================== Image Cropping States ====================
+  // Image Cropping States
   const [showCropModal, setShowCropModal] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState({ aspect: 1 });
@@ -37,16 +37,14 @@ export default function Products() {
   const imgRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
-  // ==================== Product Form State ====================
+  // Product Form State
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
     description: "",
-    images: [], // Stores images - either File objects for new uploads or {id, url} for existing images
+    images: [],
     variants: [],
   });
-
-  // ==================== Data Fetching Functions ====================
 
   // Fetch paginated products from backend
   const fetchProducts = async (page = 1) => {
@@ -67,23 +65,21 @@ export default function Products() {
     }
   };
 
-  // Fetch specific product data for editing using the product ID
+  // Fetch specific product data for editing
   const fetchProductForEdit = async (productId) => {
     try {
       const response = await api.get(`/vendor/products/${productId}/`);
       if (response.data) {
         const { name, description, category, variants, images } = response.data;
         
-        // Format images to have consistent structure {id, url} for existing images
         const formattedImages = images.map(img => ({ 
           id: img.id, 
           url: img.url,
-          isExisting: true // Flag to identify existing images
+          isExisting: true
         }));
         
-        // Preserve variant IDs
         const formattedVariants = variants.map(variant => ({
-          id: variant.id, // Preserve the variant ID
+          id: variant.id,
           quantity: variant.quantity,
           price: variant.price,
           stock: variant.stock,
@@ -97,7 +93,7 @@ export default function Products() {
           variants: formattedVariants,
           images: formattedImages,
         });
-        setImagesToDelete([]); // Reset images to delete when starting a new edit
+        setImagesToDelete([]);
       }
     } catch (error) {
       console.error("Failed to fetch product for editing:", error);
@@ -105,14 +101,10 @@ export default function Products() {
     }
   };
 
-  // ==================== Effect Hooks ====================
-  
-  // Initial product fetch on page change
   useEffect(() => {
     fetchProducts(currentPage);
   }, [currentPage]);
 
-  // Initialize selected variants when products change
   useEffect(() => {
     const initialSelectedVariants = {};
     products.forEach((product, index) => {
@@ -123,9 +115,7 @@ export default function Products() {
     setSelectedVariants((prev) => ({ ...prev, ...initialSelectedVariants }));
   }, [products]);
 
-  // ==================== Variant Handling Functions ====================
-  
-  // Handle variant selection in product list
+  // Variant Handling Functions
   const handleVariantSelect = (productIndex, variantId) => {
     setSelectedVariants((prev) => ({
       ...prev,
@@ -133,7 +123,6 @@ export default function Products() {
     }));
   };
 
-  // Get the selected variant for a product in the list
   const getSelectedVariant = (productIndex) => {
     const selectedVariantId = selectedVariants[productIndex];
     return products[productIndex].variants.find(
@@ -141,18 +130,16 @@ export default function Products() {
     );
   };
 
-  // Add new variant to form
   const handleAddVariant = () => {
     setNewProduct({
       ...newProduct,
       variants: [
         ...newProduct.variants,
-        { id: Date.now(), quantity: 0, price: 0, stock: 0, variant_unit: "" }, // Temporary ID for new variants
+        { id: Date.now(), quantity: 0, price: 0, stock: 0, variant_unit: "" },
       ],
     });
   };
 
-  // Remove variant from form
   const handleRemoveVariant = (variantIdToRemove) => {
     setNewProduct({
       ...newProduct,
@@ -160,19 +147,16 @@ export default function Products() {
     });
   };
 
-  // Update variant field values in form
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...newProduct.variants];
     if ((field === 'price' || field === 'stock' || field === 'quantity') && value < 0) {
-      return; // Prevent negative values
+      return;
     }
     updatedVariants[index][field] = value;
     setNewProduct({ ...newProduct, variants: updatedVariants });
   };
 
-  // ==================== Image Handling Functions ====================
-  
-  // Handle file selection for image upload
+  // Image Handling Functions
   function onSelectFile(e) {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -185,12 +169,10 @@ export default function Products() {
     }
   }
 
-  // Handle image load for cropping
   function onImageLoad(e) {
     const { width, height } = e.currentTarget;
-    // Calculate a centered crop
-    const aspect = 1; // Square aspect ratio
-    const cropWidth = width * 0.9; // 90% of the image width
+    const aspect = 1;
+    const cropWidth = width * 0.9;
     const cropHeight = cropWidth / aspect;
     const cropX = (width - cropWidth) / 2;
     const cropY = (height - cropHeight) / 2;
@@ -204,7 +186,6 @@ export default function Products() {
     });
   }
 
-  // Process completed crop and add to product images
   async function handleCropComplete() {
     if (!completedCrop || !imgRef.current || !previewCanvasRef.current) return;
 
@@ -234,12 +215,11 @@ export default function Products() {
     canvas.toBlob((blob) => {
       if (!blob) return;
       const croppedImage = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
-      // Add a unique ID and temporary URL for display 
       const imageWithId = { 
         id: Date.now(), 
         file: croppedImage,
         url: URL.createObjectURL(croppedImage),
-        isExisting: false // Flag to identify as a new image
+        isExisting: false
       };
       
       setNewProduct(prev => ({
@@ -250,26 +230,20 @@ export default function Products() {
     }, 'image/jpeg');
   }
 
-  // Handle image deletion
   const handleDeleteImage = (imageId) => {
-    // First, get the image to be deleted
     const imageToDelete = newProduct.images.find(img => img.id === imageId);
     
-    // If in edit mode and it's an existing image (has isExisting flag), add to delete list
     if (isEditMode && imageToDelete && imageToDelete.isExisting) {
       setImagesToDelete(prev => [...prev, imageId]);
     }
     
-    // Remove image from the display list regardless of type
     setNewProduct(prev => ({
       ...prev,
       images: prev.images.filter(img => img.id !== imageId)
     }));
   };
 
-  // ==================== Form Handling Functions ====================
-  
-  // Clear form and reset states
+  // Form Handling Functions
   const clearForm = () => {
     setNewProduct({
       name: "",
@@ -283,40 +257,32 @@ export default function Products() {
     setImagesToDelete([]);
   };
 
-  // Handle form submission (both add and edit)
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
     const formData = new FormData();
 
-    // Common form data
     formData.append('name', newProduct.name);
     formData.append('category', newProduct.category);
     formData.append('description', newProduct.description);
 
-    // Handle images differently based on add/edit mode
     if (isEditMode) {
-      // For edit mode: 
-      // 1. New images (with file property) need to be uploaded
       newProduct.images
         .filter(image => image.file)
         .forEach(image => {
           formData.append('images', image.file);
         });
       
-      // 2. Existing images to delete need to be identified
       if (imagesToDelete.length > 0) {
         formData.append('images_to_delete', JSON.stringify(imagesToDelete));
       }
     } else {
-      // For add mode: All images should be uploaded
       newProduct.images.forEach(image => {
         formData.append('images', image.file);
       });
     }
 
-    // Process variants
     const variants = newProduct.variants.map((variant) => ({
-      id: variant.id, // Include the variant ID
+      id: variant.id,
       quantity: Number(variant.quantity),
       price: Number(variant.price),
       stock: Number(variant.stock),
@@ -326,18 +292,14 @@ export default function Products() {
 
     try {
       let response;
-      console.log("formData", formData)
       
-      // Different API endpoints for add vs edit
       if (isEditMode && editingProductId) {
-        console.log("FormData as JSON:", JSON.stringify(Object.fromEntries(formData.entries())));
         response = await api.put(`/vendor/products/${editingProductId}/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
-        console.log("FormData as JSON:", JSON.stringify(Object.fromEntries(formData.entries())));
         response = await api.post('/vendor/add-product/', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -349,12 +311,12 @@ export default function Products() {
         setIsAddProductOpen(false);
         clearForm();
         toast.success(`Product ${isEditMode ? 'updated' : 'added'} successfully`);
-        fetchProducts(currentPage); // Refresh the product list
+        fetchProducts(currentPage);
       }
     } catch (error) {
       if (error.response && error.response.data) {
         const errors = extractErrorMessages(error.response.data);
-        const errorMessage = errors.join(", "); // Show all errors in one toast
+        const errorMessage = errors.join(", ");
         toast.error(errorMessage);
       } else {
         toast.error(`Product could not be ${isEditMode ? 'updated' : 'added'} due to an error! Please try again later.`);
@@ -362,30 +324,22 @@ export default function Products() {
     }
   };
 
-  // Cancel form submission
   const handleCancel = () => {
     clearForm();
     setIsAddProductOpen(false);
   };
 
-  // Handle edit product action
   const handleEditProduct = async (productIndex) => {
-    // Get the product from the products array
     const productToEdit = products[productIndex];
-    
-    // Important: Use the product ID from the API response
     const productId = productToEdit.id;
     
-    // Set edit mode flags and store the ID
     setEditingProductId(productId);
     setIsEditMode(true);
     setIsAddProductOpen(true);
     
-    // Fetch the product details for editing using the product ID
     await fetchProductForEdit(productId);
   };
 
-  // Handle product deletion
   const handleDeleteProduct = async (productIndex) => {
     const productToDelete = products[productIndex];
     const productId = productToDelete.id;
@@ -401,12 +355,10 @@ export default function Products() {
     }
   };
 
-  // Handle pagination
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
 
-  // ==================== Render Component ====================
   return (
     <Card>
       <CardHeader>
@@ -423,11 +375,9 @@ export default function Products() {
           />
           <Button onClick={() => {
             if (isAddProductOpen) {
-              // If already open, just close it
               clearForm();
               setIsAddProductOpen(false);
             } else {
-              // If opening, ensure we're in add mode, not edit mode
               clearForm();
               setIsEditMode(false);
               setIsAddProductOpen(true);
@@ -652,66 +602,88 @@ export default function Products() {
         )}
 
         {/* Products Table */}
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Image</th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Variant</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product, index) => {
-              const selectedVariant = getSelectedVariant(index);
-              return (
-                <tr key={product.id}>
-                  <td className="text-center">{index + 1}</td>
-                  <td className="text-center">
-                    <img
-                      src={product.product_image}
-                      alt={product.product_name}
-                      className="w-16 h-16 object-cover"
-                    />
-                  </td>
-                  <td className="text-center">{product.product_name}</td>
-                  <td className="text-center">{product.category}</td>
-                  <td className="text-center">
-                    {product.variants && product.variants.length > 0 ? (
-                      <select
-                        className="w-full p-2 border rounded-md"
-                        value={selectedVariants[index] || ""}
-                        onChange={(e) => handleVariantSelect(index, e.target.value)}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left p-3">#</th>
+                <th className="text-left p-3">Image</th>
+                <th className="text-left p-3">Name</th>
+                <th className="text-left p-3">Category</th>
+                <th className="text-left p-3">Variant</th>
+                <th className="text-left p-3">Price</th>
+                <th className="text-left p-3">Stock</th>
+                <th className="text-left p-3">Blocked by Admin</th>
+                <th className="text-left p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product, index) => {
+                const selectedVariant = getSelectedVariant(index);
+                return (
+                  <tr key={product.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">{index + 1}</td>
+                    <td className="p-3">
+                      <img
+                        src={product.product_image}
+                        alt={product.product_name}
+                        className="w-16 h-16 object-cover"
+                      />
+                    </td>
+                    <td className="p-3">{product.product_name}</td>
+                    <td className="p-3">{product.category}</td>
+                    <td className="p-3">
+                      {product.variants && product.variants.length > 0 ? (
+                        <select
+                          className="w-full p-2 border rounded-md"
+                          value={selectedVariants[index] || ""}
+                          onChange={(e) => handleVariantSelect(index, e.target.value)}
+                        >
+                          {product.variants.map((variant) => (
+                            <option key={variant.id} value={variant.id}>
+                              {variant.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span>No variants</span>
+                      )}
+                    </td>
+                    <td className="p-3">{selectedVariant ? `₹${selectedVariant.price.toFixed(2)}` : "N/A"}</td>
+                    <td className="p-3">{selectedVariant ? selectedVariant.stock : "N/A"}</td>
+                    <td className="p-3 items-center">
+                      <div className="flex justify-center items-center h-full">
+                      {product.is_blocked ? (
+                        <Ban className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <Check className="h-5 w-5 text-green-500" />
+                      )}
+                      </div>
+                    </td>
+                    <td className="p-3 gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleEditProduct(index)}
+                        disabled={product.is_blocked}
                       >
-                        {product.variants.map((variant) => (
-                          <option key={variant.id} value={variant.id}>
-                            {variant.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span>No variants</span>
-                    )}
-                  </td>
-                  <td className="text-center">{selectedVariant ? `₹${selectedVariant.price.toFixed(2)}` : "N/A"}</td>
-                  <td className="text-center">{selectedVariant ? selectedVariant.stock : "N/A"}</td>
-                  <td className="text-center">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditProduct(index)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteProduct(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteProduct(index)}
+                        disabled={product.is_blocked}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
         <div className="flex justify-between items-center mt-4">
