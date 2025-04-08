@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { jsPDF } from "jspdf"
-import autoTable from "jspdf-autotable" // Import autoTable separately
+import autoTable from "pdf-autotable" // Import autoTable separately
 import { Download, Users, Store, IndianRupee, BarChart3, PieChartIcon } from "lucide-react"
 
 export default function Dashboard() {
@@ -236,7 +236,7 @@ const downloadSalesReport = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl font-bold">MEMInc Dashboard</CardTitle>
-              <CardDescription>Sales performance {getPeriodText()}</CardDescription>
+              <CardDescription>performance {getPeriodText()}</CardDescription>
             </div>
             <Button onClick={downloadSalesReport} className="bg-primary hover:bg-primary/90" disabled={isLoading}>
               <Download className="mr-2 h-4 w-4" />
