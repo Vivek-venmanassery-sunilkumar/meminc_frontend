@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { jsPDF } from "jspdf"
-import autoTable from "pdf-autotable" // Import autoTable separately
+import autoTable from "jspdf-autotable"// Import autoTable separately
 import { Download, Users, Store, IndianRupee, BarChart3, PieChartIcon } from "lucide-react"
 
 export default function Dashboard() {
