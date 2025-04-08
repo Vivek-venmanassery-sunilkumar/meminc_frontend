@@ -5,7 +5,7 @@ import Footer from "@/components/commoncomponents/Footer"
 import api from "@/axios/axiosInstance"
 import BannerCarousel from "@/components/commoncomponents/Carousalcommon"
 import { useDispatch } from "react-redux"
-import { setCartData } from "@/redux/CartSlice" // Import the action
+import { clearCart, setCartData } from "@/redux/CartSlice" // Import the action
 import { fetchWishlistSuccess } from "@/redux/WishListSlice"
 import LoadingSpinner from "@/components/authenticateduser/loading-spinner" // Import the new loading component
 
@@ -62,6 +62,7 @@ export default function LoggedInUserHomepage() {
         dispatch(setCartData(response.data)) // Dispatch cart data to Redux
       } catch (error) {
         console.error("Error fetching cart data:", error)
+        dispatch(clearCart())
       }
     }
 
