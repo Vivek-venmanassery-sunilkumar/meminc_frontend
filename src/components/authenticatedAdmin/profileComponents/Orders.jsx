@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Pagination,
   PaginationContent,
@@ -18,7 +18,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from "@/components/ui/pagination"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,61 +28,68 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
-import api from "@/axios/axiosInstance";
-import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc";
-import toast from "react-hot-toast";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, Eye } from "lucide-react"
+import api from "@/axios/axiosInstance"
+import extractErrorMessages from "@/components/commoncomponents/errorHandlefunc"
+import toast from "react-hot-toast"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default function Orders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [expandedOrder, setExpandedOrder] = useState(null)
+  const [viewDetailsDialog, setViewDetailsDialog] = useState({
+    isOpen: false,
+    order: null,
+  })
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 3;
+  const [currentPage, setCurrentPage] = useState(1)
+  const ordersPerPage = 10
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     orderItemId: null,
     newStatus: "",
-  });
+  })
 
   // Cancellation reason dialog state
   const [cancelDialog, setCancelDialog] = useState({
     isOpen: false,
     orderItemId: null,
     reason: "",
-  });
+  })
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const response = await api.get("/admin/orders/")
+      if (Array.isArray(response.data)) {
+        setOrders(response.data)
+      } else {
+        console.error("Expected an array but got:", response.data)
+        setOrders([])
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await api.get("/admin/orders/");
-        if (Array.isArray(response.data)) {
-          setOrders(response.data);
-        } else {
-          console.error("Expected an array but got:", response.data);
-          setOrders([]);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, []);
+    fetchOrders()
+  }, [])
 
   // Get current orders for pagination
-  const indexOfLastOrder = currentPage * ordersPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
-  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const indexOfLastOrder = currentPage * ordersPerPage
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder)
+  const totalPages = Math.ceil(orders.length / ordersPerPage)
 
   const handleStatusChangeClick = (orderItemId, newStatus) => {
     if (newStatus === "cancelled") {
@@ -90,93 +97,107 @@ export default function Orders() {
         isOpen: true,
         orderItemId,
         reason: "",
-      });
+      })
     } else {
       setConfirmDialog({
         isOpen: true,
         orderItemId,
         newStatus,
-      });
+      })
     }
-  };
+  }
 
   const handleStatusChange = async (orderItemId, newStatus, reason = null) => {
     try {
-      const payload = { status: newStatus };
+      const payload = { status: newStatus }
       if (reason) {
-        payload.cancellation_reason = reason;
+        payload.cancellation_reason = reason
       }
 
-      await api.patch(`/admin/order-status-update/${orderItemId}/`, payload);
-
-      setOrders(
-        orders.map((order) =>
-          order.order_item_id === orderItemId
-            ? { ...order, status: newStatus, cancellation_reason: reason || order.cancellation_reason }
-            : order,
-        ),
-      );
-
-      toast.success(`Order status updated to ${newStatus}`);
+      await api.patch(`/admin/order-status-update/${orderItemId}/`, payload)
+      
+      // Fetch updated orders after status change
+      await fetchOrders()
+      
+      toast.success(`Order status updated to ${newStatus}`)
+      
+      // If we're viewing details of this order, update that as well
+      if (viewDetailsDialog.order?.order_item_id === orderItemId) {
+        const updatedOrder = orders.find(order => order.order_item_id === orderItemId)
+        if (updatedOrder) {
+          setViewDetailsDialog(prev => ({
+            ...prev,
+            order: updatedOrder
+          }))
+        }
+      }
     } catch (err) {
       if (err.response && err.response.data) {
-        const errorMessage = extractErrorMessages(err.response.data).join(", ");
-        toast.error(errorMessage);
+        const errorMessage = extractErrorMessages(err.response.data).join(", ")
+        toast.error(errorMessage)
       } else {
-        toast.error("Failed to update order status");
+        toast.error("Failed to update order status")
       }
     }
-  };
+  }
 
   const confirmStatusChange = () => {
-    handleStatusChange(confirmDialog.orderItemId, confirmDialog.newStatus);
-    setConfirmDialog({ isOpen: false, orderItemId: null, newStatus: "" });
-  };
+    handleStatusChange(confirmDialog.orderItemId, confirmDialog.newStatus)
+    setConfirmDialog({ isOpen: false, orderItemId: null, newStatus: "" })
+  }
 
   const submitCancellation = () => {
     if (!cancelDialog.reason.trim()) {
-      toast.error("Please provide a reason for cancellation");
-      return;
+      toast.error("Please provide a reason for cancellation")
+      return
     }
 
-    handleStatusChange(cancelDialog.orderItemId, "cancelled", cancelDialog.reason);
-    setCancelDialog({ isOpen: false, orderItemId: null, reason: "" });
-  };
+    handleStatusChange(cancelDialog.orderItemId, "cancelled", cancelDialog.reason)
+    setCancelDialog({ isOpen: false, orderItemId: null, reason: "" })
+  }
+
+  const openViewDetailsDialog = (e, order) => {
+    e.stopPropagation()
+    setViewDetailsDialog({
+      isOpen: true,
+      order,
+    })
+  }
 
   const getStatusBadge = (status) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "processing":
-        return <Badge className="bg-blue-500">Processing</Badge>;
+        return <Badge className="bg-blue-500">Processing</Badge>
       case "dispatched":
-        return <Badge className="bg-green-500">Dispatched</Badge>;
+        return <Badge className="bg-indigo-500">Dispatched</Badge>
       case "cancelled":
-        return <Badge className="bg-red-500">Cancelled</Badge>;
+        return <Badge className="bg-red-500">Cancelled</Badge>
       case "delivered":
-        return <Badge className="bg-purple-500">Delivered</Badge>;
+        return <Badge className="bg-green-400">Delivered</Badge>
       default:
-        return <Badge className="bg-gray-500">{status}</Badge>;
+        return <Badge className="bg-gray-500">{status}</Badge>
     }
-  };
+  }
 
   const getPaymentStatusBadge = (paymentStatus) => {
     switch (paymentStatus) {
-      case "paid":
-        return <Badge className="bg-green-500">Paid</Badge>;
+      case "completed":
+        return <Badge className="bg-[#4A5859]">completed</Badge>
       case "pending":
-        return <Badge className="bg-yellow-500">Pending</Badge>;
+        return <Badge className="bg-yellow-500">Pending</Badge>
       case "failed":
-        return <Badge className="bg-red-500">Failed</Badge>;
+        return <Badge className="bg-red-500">Failed</Badge>
       default:
-        return <Badge className="bg-gray-500">{paymentStatus}</Badge>;
+        return <Badge className="bg-blue-300">{paymentStatus}</Badge>
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-[#4A5859]" />
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -186,7 +207,7 @@ export default function Orders() {
           <div className="text-red-500">Error: {error}</div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -197,85 +218,68 @@ export default function Orders() {
         </CardHeader>
         <CardContent className="p-6">
           {currentOrders.length > 0 ? (
-            currentOrders.map((order) => (
-              <div
-                key={order.order_item_id}
-                className="mb-6 p-5 border border-[#4A5859]/20 rounded-md shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex flex-col md:flex-row md:items-start gap-4">
-                  {order.image_url && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={order.image_url || "/placeholder.svg"}
-                        alt={order.product}
-                        className="w-24 h-24 object-cover rounded-md border border-[#4A5859]/10"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-grow space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-lg">{order.product}</h3>
-                        <p className="text-sm text-gray-600">Order Item ID: #{order.order_item_id}</p>
-                      </div>
-                      <div>{getStatusBadge(order.status)}</div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-[#4A5859]">Order Details</p>
-                        <div className="text-sm">
-                          <p>Quantity: {order.quantity}</p>
-                          <p>Price: ₹{order.price}</p>
-                          <div>Payment Status: {getPaymentStatusBadge(order.payment_status)}</div>
-                          <p>Ordered on: {new Date(order.created_at).toLocaleDateString()}</p>
-                          {order.cancellation_reason && (
-                            <div className="mt-2">
-                              <p className="text-sm font-medium text-red-500">Cancellation Reason:</p>
-                              <p className="text-sm italic">{order.cancellation_reason}</p>
-                            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Ordered Date</TableHead>
+                    <TableHead>Order Status</TableHead>
+                    <TableHead>Payment Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentOrders.map((order) => (
+                    <TableRow key={order.order_item_id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          {order.image_url && (
+                            <img
+                              src={order.image_url || "/placeholder.svg"}
+                              alt={order.product}
+                              className="w-10 h-10 object-cover rounded-md border border-[#4A5859]/10"
+                            />
+                          )}
+                          <div className="font-medium">{order.product}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>#{order.order_item_id}</TableCell>
+                      <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          {getStatusBadge(order.status)}
+                          {order.status.toLowerCase() === "dispatched" && (
+                            <Select onValueChange={(value) => handleStatusChangeClick(order.order_item_id, value)}>
+                              <SelectTrigger className="w-[140px] h-8 mt-1">
+                                <SelectValue placeholder="Update Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
                           )}
                         </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-medium text-[#4A5859]">Shipping Address</p>
-                        <div className="text-sm">
-                          <p>{order.shipping_address.name}</p>
-                          <p>{order.shipping_address.street_address}</p>
-                          <p>
-                            {order.shipping_address.city}, {order.shipping_address.state}{" "}
-                            {order.shipping_address.pincode}
-                          </p>
-                          <p>{order.shipping_address.country}</p>
-                          <p>Phone: {order.shipping_address.phone_number}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {order.status === "Dispatched" && (
-                      <div className="pt-3 border-t mt-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium">Update Status:</span>
-                          <Select
-                            value={order.status}
-                            onValueChange={(value) => handleStatusChangeClick(order.order_item_id, value)}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="delivered">Delivered</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
+                      </TableCell>
+                      <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={(e) => openViewDetailsDialog(e, order)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
               <p>No orders found.</p>
@@ -294,17 +298,31 @@ export default function Orders() {
                   />
                 </PaginationItem>
 
-                {[...Array(totalPages)].map((_, index) => (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(index + 1)}
-                      isActive={currentPage === index + 1}
-                      className="cursor-pointer"
-                    >
-                      {index + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, index) => {
+                  // Show first page, last page, current page, and pages around current
+                  let pageToShow
+                  if (totalPages <= 5) {
+                    pageToShow = index + 1
+                  } else if (currentPage <= 3) {
+                    pageToShow = index + 1
+                  } else if (currentPage >= totalPages - 2) {
+                    pageToShow = totalPages - 4 + index
+                  } else {
+                    pageToShow = currentPage - 2 + index
+                  }
+
+                  return (
+                    <PaginationItem key={index}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pageToShow)}
+                        isActive={currentPage === pageToShow}
+                        className="cursor-pointer"
+                      >
+                        {pageToShow}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                })}
 
                 <PaginationItem>
                   <PaginationNext
@@ -364,6 +382,56 @@ export default function Orders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog
+        open={viewDetailsDialog.isOpen}
+        onOpenChange={(isOpen) => !isOpen && setViewDetailsDialog({ ...viewDetailsDialog, isOpen })}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+          </DialogHeader>
+          {viewDetailsDialog.order && (
+            <div className="grid md:grid-cols-2 gap-4 py-4">
+              <div>
+                <h4 className="font-semibold mb-2 text-[#4A5859]">Order Information</h4>
+                <div className="space-y-2 text-sm">
+                  <p>Product: {viewDetailsDialog.order.product}</p>
+                  <p>Order ID: #{viewDetailsDialog.order.order_item_id}</p>
+                  <p>Date: {new Date(viewDetailsDialog.order.created_at).toLocaleDateString()}</p>
+                  <p>Quantity: {viewDetailsDialog.order.quantity}</p>
+                  <p>Price: ₹{viewDetailsDialog.order.price}</p>
+                  <div>Status: {getStatusBadge(viewDetailsDialog.order.status)}</div>
+                  <div>Payment Status: {getPaymentStatusBadge(viewDetailsDialog.order.payment_status)}</div>
+                  {viewDetailsDialog.order.cancellation_reason && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-red-500">Cancellation Reason:</p>
+                      <p className="text-sm italic">{viewDetailsDialog.order.cancellation_reason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2 text-[#4A5859]">Shipping Address</h4>
+                <div className="space-y-1 text-sm">
+                  <p>{viewDetailsDialog.order.shipping_address.name}</p>
+                  <p>{viewDetailsDialog.order.shipping_address.street_address}</p>
+                  <p>
+                    {viewDetailsDialog.order.shipping_address.city}, {viewDetailsDialog.order.shipping_address.state}{" "}
+                    {viewDetailsDialog.order.shipping_address.pincode}
+                  </p>
+                  <p>{viewDetailsDialog.order.shipping_address.country}</p>
+                  <p>Phone: {viewDetailsDialog.order.shipping_address.phone_number}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setViewDetailsDialog({ isOpen: false, order: null })}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
-  );
+  )
 }

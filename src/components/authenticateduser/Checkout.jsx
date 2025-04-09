@@ -85,7 +85,7 @@ export default function Checkout() {
   // Redirect if cart is empty
   useEffect(() => {
     if (Number(totalPrice) === 0) {
-      navigate("/customer");
+      navigate("/customer-profile/orders");
     }
   }, [navigate, totalPrice]);
 
