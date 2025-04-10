@@ -14,6 +14,7 @@ import Coupons from './Coupons';
 import CategoryManagement from './CategoryManagement';
 import AdminWallet from './AdminWallet';
 import AdminProducts from './AdminProducts';
+import NotificationManagement from './NotificationManagement';
 
 export default function AdminProfileContent() {
   const { tab } = useParams(); // Get the active tab from the URL
@@ -56,6 +57,7 @@ export default function AdminProfileContent() {
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
             <TabsTrigger value="coupons" className="w-full text-left">Coupons</TabsTrigger>
             <TabsTrigger value="wallet" className="w-full text-left">Wallet</TabsTrigger>
+            <TabsTrigger value='notification' className='w-full text-left'>Notification Management</TabsTrigger>
             <Button
               onClick={handleLogout}
               className="w-full mt-4 text-left justify-center"
@@ -75,6 +77,9 @@ export default function AdminProfileContent() {
             </TabsContent>
             <TabsContent value="userManagement">
               <UserManagement />
+            </TabsContent>
+            <TabsContent value='notification'>
+              <NotificationManagement/>
             </TabsContent>
             <TabsContent value="bannerManagement">
               <BannerManagement />
