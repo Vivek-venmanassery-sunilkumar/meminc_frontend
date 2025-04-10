@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [customDatesApplied, setCustomDatesApplied] = useState(false);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -28,13 +29,17 @@ export default function Dashboard() {
         setIsLoading(false);
       }
     };
-    fetchAllData();
-  }, [filter, startDate, endDate]);
+    
+    if (filter !== "custom" || customDatesApplied) {
+      fetchAllData();
+      setCustomDatesApplied(false);
+    }
+  }, [filter, customDatesApplied]);
 
-  const fetchData = async (filter) => {
+  const fetchData = async (filterType) => {
     try {
-      let url = `/admin/dashboard/?filter=${filter}`;
-      if (filter === "custom" && startDate && endDate) {
+      let url = `/admin/dashboard/?filter=${filterType}`;
+      if (filterType === "custom" && startDate && endDate) {
         url += `&start_date=${startDate}&end_date=${endDate}`;
       }
       const response = await api.get(url);
@@ -44,10 +49,10 @@ export default function Dashboard() {
     }
   };
 
-  const fetchOrderData = async (filter) => {
+  const fetchOrderData = async (filterType) => {
     try {
-      let url = `/admin/salesreport/?filter=${filter}`;
-      if (filter === "custom" && startDate && endDate) {
+      let url = `/admin/salesreport/?filter=${filterType}`;
+      if (filterType === "custom" && startDate && endDate) {
         url += `&start_date=${startDate}&end_date=${endDate}`;
       }
       const response = await api.get(url);
@@ -65,7 +70,12 @@ export default function Dashboard() {
     }
   };
 
-  // Format date in Indian format (dd/mm/yyyy)
+  const handleApplyCustomDates = () => {
+    if (startDate && endDate) {
+      setCustomDatesApplied(true);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -76,7 +86,6 @@ export default function Dashboard() {
     });
   };
 
-  // Format date in long format (1 January 2023)
   const formatDateLong = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -87,16 +96,14 @@ export default function Dashboard() {
     });
   };
 
-  // Function to format numbers as Indian Rupees
   const formatIndianRupees = (amount) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount || 0);
   };
 
-  // Get current date in a formatted string
   const getCurrentDate = () => {
     const now = new Date();
     return now.toLocaleDateString("en-IN", {
@@ -106,7 +113,6 @@ export default function Dashboard() {
     });
   };
 
-  // Function to get period text based on filter
   const getPeriodText = () => {
     const now = new Date();
     const today = new Date().toISOString().split('T')[0];
@@ -142,57 +148,42 @@ export default function Dashboard() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Add company header
+      // Header
       doc.setFillColor(0, 0, 0);
       doc.rect(0, 0, pageWidth, 40, "F");
-
-      // Add company name and report title
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
       doc.text("MEMInc", pageWidth / 2, 20, { align: "center" });
-
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
       doc.text("Sales Report", pageWidth / 2, 30, { align: "center" });
 
-      // Add date and report period in the header
+      // Report info
       doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      
-      // Date on the left
       doc.text(`Date: ${getCurrentDate()}`, 15, 38);
-      
-      // Report period on the right
-      const reportPeriodText = `Report Period: ${filter === "custom" ? "Custom" : filter.charAt(0).toUpperCase() + filter.slice(1)}`;
+      const reportPeriodText = filter === "custom" 
+        ? `Report from ${formatDate(startDate)} to ${formatDate(endDate)}`
+        : `Report Period: ${filter.charAt(0).toUpperCase() + filter.slice(1)}`;
       const reportPeriodWidth = doc.getStringUnitWidth(reportPeriodText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
       doc.text(reportPeriodText, pageWidth - 15 - reportPeriodWidth, 38);
 
-      // Add custom date range if applicable
-      if (filter === "custom" && startDate && endDate) {
-        doc.setFontSize(8);
-        const dateRangeText = `${formatDate(startDate)} - ${formatDate(endDate)}`;
-        const dateRangeWidth = doc.getStringUnitWidth(dateRangeText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-        doc.text(dateRangeText, pageWidth - 15 - dateRangeWidth, 45);
-      }
-
-      // Add summary section
+      // Summary section
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
       doc.text("Financial Summary", 15, 50);
 
-      // Create a summary table with Rs. prefix
       const summaryData = [
-        ["Total Revenue", `Rs. ${data.total_revenue.toLocaleString("en-IN")}`],
-        ["Total Commission Earned", `Rs. ${data.total_commission_earned.toLocaleString("en-IN")}`],
-        ["Total Vendor Earnings", `Rs. ${data.total_vendor_earnings.toLocaleString("en-IN")}`],
-        ["Active Customers", data.total_customers_active.toString()],
-        ["Active Vendors", data.total_vendors_active.toString()],
-        ["Pending Orders", data.pending_orders.toString()],
-        ["Vendor Payouts Pending", data.vendor_payouts_pending.toString()],
-        ["Most Active Vendor", data.most_active_vendor],
-        ["Discounts Given", data.discounts_given.toString()],
+        ["Total Revenue", `Rs. ${(data.total_revenue || 0).toLocaleString("en-IN")}`],
+        ["Total Commission", `Rs. ${(data.total_commission_earned || 0).toLocaleString("en-IN")}`],
+        ["Vendor Earnings", `Rs. ${(data.total_vendor_earnings || 0).toLocaleString("en-IN")}`],
+        ["Active Customers", (data.total_customers_active || 0).toString()],
+        ["Active Vendors", (data.total_vendors_active || 0).toString()],
+        ["Pending Orders", (data.pending_orders || 0).toString()],
+        ["Pending Payouts", (data.vendor_payouts_pending || 0).toString()],
+        ["Top Vendor", data.most_active_vendor || "N/A"],
+        ["Discounts Given", (data.discounts_given || 0).toString()],
       ];
 
       autoTable(doc, {
@@ -201,7 +192,7 @@ export default function Dashboard() {
         body: summaryData,
         theme: "grid",
         headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
-        styles: { fontSize: 10, cellWidth: "wrap" },
+        styles: { fontSize: 10 },
         columnStyles: {
           0: { cellWidth: 100 },
           1: { cellWidth: 60, halign: "right" },
@@ -209,49 +200,44 @@ export default function Dashboard() {
         margin: { left: 15, right: 15 },
       });
 
-      // Add order details section
+      // Order details
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
       doc.text("Order Details", 15, doc.lastAutoTable.finalY + 20);
 
-      // Create order details table with Rs. prefix
       const orderTableData = orderData.map((order) => [
-        order.id.toString(),
-        order.vendor,
-        order.company,
-        order.quantity.toString(),
-        order.status,
+        order.id?.toString() || "N/A",
+        order.vendor || "N/A",
+        order.company || "N/A",
+        (order.quantity || 0).toString(),
+        order.status || "N/A",
         order.vendor_amount_paid ? "Paid" : "Unpaid",
-        `Rs. ${order.vendor_paid_amount.toLocaleString("en-IN")}`,
+        `Rs. ${(order.vendor_paid_amount || 0).toLocaleString("en-IN")}`,
       ]);
 
-      // Add order details table with adjusted column widths
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 25,
-        head: [["ID", "Vendor", "Company", "Qty", "Status", "Payment Status", "Amount"]],
+        head: [["ID", "Vendor", "Company", "Qty", "Status", "Payment", "Amount"]],
         body: orderTableData,
         theme: "grid",
         headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
         styles: { fontSize: 9 },
         columnStyles: {
-          0: { cellWidth: 15 },  // ID
-          1: { cellWidth: 35 },  // Vendor
-          2: { cellWidth: 40 },  // Company
-          3: { cellWidth: 15 },  // Qty
-          4: { cellWidth: 25 },  // Status
-          5: { cellWidth: 25 },  // Payment Status
-          6: { cellWidth: 25, halign: "right" },  // Amount
+          0: { cellWidth: 15 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 15 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 },
+          6: { cellWidth: 25, halign: "right" },
         },
         margin: { left: 10, right: 10 },
-        tableWidth: 'wrap'
       });
 
-      // Add footer
+      // Footer
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
         doc.text(
           `MEMInc - Confidential | Page ${i} of ${pageCount}`,
           pageWidth / 2,
@@ -260,9 +246,8 @@ export default function Dashboard() {
         );
       }
 
-      // Save the PDF
       const fileName = filter === "custom" && startDate && endDate 
-        ? `MEMInc-Sales-Report-Custom-${startDate.replace(/\//g, '-')}-${endDate.replace(/\//g, '-')}.pdf`
+        ? `MEMInc-Sales-Report-${startDate.replace(/\//g, '-')}-to-${endDate.replace(/\//g, '-')}.pdf`
         : `MEMInc-Sales-Report-${filter}-${new Date().toISOString().split("T")[0]}.pdf`;
       
       doc.save(fileName);
@@ -281,9 +266,9 @@ export default function Dashboard() {
   }
 
   const chartData = [
-    { name: "Revenue", value: data.total_revenue },
-    { name: "Commission", value: data.total_commission_earned },
-    { name: "Vendor Earnings", value: data.total_vendor_earnings },
+    { name: "Revenue", value: data.total_revenue || 0 },
+    { name: "Commission", value: data.total_commission_earned || 0 },
+    { name: "Vendor Earnings", value: data.total_vendor_earnings || 0 },
   ];
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
@@ -297,9 +282,9 @@ export default function Dashboard() {
               <CardTitle className="text-2xl font-bold">MEMInc Dashboard</CardTitle>
               <CardDescription>Sales performance {getPeriodText()}</CardDescription>
             </div>
-            <Button onClick={downloadSalesReport} className="bg-primary hover:bg-primary/90" disabled={isLoading}>
+            <Button onClick={downloadSalesReport} className="bg-primary hover:bg-primary/90">
               <Download className="mr-2 h-4 w-4" />
-              Download Sales Report
+              Download Report
             </Button>
           </div>
         </CardHeader>
@@ -322,13 +307,10 @@ export default function Dashboard() {
                   value={startDate}
                   onChange={(e) => {
                     const selectedDate = e.target.value;
-                    // If selected date is after end date, clear end date
-                    if (endDate && selectedDate > endDate) {
-                      setEndDate("");
-                    }
+                    if (endDate && selectedDate > endDate) setEndDate("");
                     setStartDate(selectedDate);
                   }}
-                  max={new Date().toISOString().split('T')[0]} // Disable future dates
+                  max={new Date().toISOString().split('T')[0]}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                 />
               </div>
@@ -338,19 +320,14 @@ export default function Dashboard() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate} // Can't be before start date
-                  max={new Date().toISOString().split('T')[0]} // Disable future dates
+                  min={startDate}
+                  max={new Date().toISOString().split('T')[0]}
                   disabled={!startDate}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                 />
               </div>
               <Button 
-                onClick={() => {
-                  if (startDate && endDate) {
-                    fetchData(filter);
-                    fetchOrderData(filter);
-                  }
-                }}
+                onClick={handleApplyCustomDates}
                 disabled={!startDate || !endDate}
                 className="self-end"
               >
@@ -394,6 +371,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-2">
@@ -402,7 +380,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex items-center">
                   <Users className="h-5 w-5 text-blue-500 mr-2" />
-                  <span className="text-2xl font-bold">{data.total_customers_active}</span>
+                  <span className="text-2xl font-bold">{data.total_customers_active || 0}</span>
                 </div>
               </CardContent>
             </Card>
@@ -413,7 +391,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex items-center">
                   <Store className="h-5 w-5 text-purple-500 mr-2" />
-                  <span className="text-2xl font-bold">{data.total_vendors_active}</span>
+                  <span className="text-2xl font-bold">{data.total_vendors_active || 0}</span>
                 </div>
               </CardContent>
             </Card>
@@ -497,36 +475,30 @@ export default function Dashboard() {
                       <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Company</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Quantity</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Payment Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Payment</th>
                       <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orderData.map((order) => (
                       <tr key={order.id} className="border-b hover:bg-muted/50">
-                        <td className="px-4 py-3 text-sm">{order.id}</td>
-                        <td className="px-4 py-3 text-sm">{order.vendor}</td>
-                        <td className="px-4 py-3 text-sm">{order.company}</td>
-                        <td className="px-4 py-3 text-sm">{order.quantity}</td>
+                        <td className="px-4 py-3 text-sm">{order.id || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm">{order.vendor || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm">{order.company || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm">{order.quantity || 0}</td>
                         <td className="px-4 py-3 text-sm">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              order.status === "delivered"
-                                ? "bg-green-100 text-green-800"
-                                : order.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
-                            {order.status}
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.status === "delivered" ? "bg-green-100 text-green-800" :
+                            order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                            "bg-blue-100 text-blue-800"
+                          }`}>
+                            {order.status || "N/A"}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              order.vendor_amount_paid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                            }`}
-                          >
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.vendor_amount_paid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}>
                             {order.vendor_amount_paid ? "Paid" : "Unpaid"}
                           </span>
                         </td>
