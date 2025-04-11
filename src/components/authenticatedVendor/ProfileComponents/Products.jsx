@@ -613,7 +613,7 @@ export default function Products() {
                 <th className="text-left p-3">Variant</th>
                 <th className="text-left p-3">Price</th>
                 <th className="text-left p-3">Stock</th>
-                <th className="text-left p-3">Blocked by Admin</th>
+                <th className="text-left p-3">Enabled by Admin</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
             </thead>
