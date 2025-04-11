@@ -54,10 +54,10 @@ export default function AdminProfileContent() {
             <TabsTrigger value="userManagement" className="w-full text-left">User Management</TabsTrigger>
             <TabsTrigger value="bannerManagement" className="w-full text-left">Banner Management</TabsTrigger>
             <TabsTrigger value ='adminproducts' className="w-full text-left">Product Management</TabsTrigger>
+            <TabsTrigger value='notification' className='w-full text-left'>Notification Management</TabsTrigger>
             <TabsTrigger value="orders" className="w-full text-left">Orders</TabsTrigger>
             <TabsTrigger value="coupons" className="w-full text-left">Coupons</TabsTrigger>
             <TabsTrigger value="wallet" className="w-full text-left">Wallet</TabsTrigger>
-            <TabsTrigger value='notification' className='w-full text-left'>Notification Management</TabsTrigger>
             <Button
               onClick={handleLogout}
               className="w-full mt-4 text-left justify-center"
